@@ -1,3 +1,5 @@
+import _ from 'lodash';
+
 const DATA_TYPE_NUMBER = 'number';
 const DATA_TYPE_STRING = 'string';
 const DATA_TYPE_BOOLEAN = 'boolean';
@@ -118,18 +120,18 @@ export default (value, type) => {
   }
   const valueType = typeof value;
   if (valueType !== 'string') {
-    if (type === DATA_TYPE_STRING) {
-      return map[DATA_TYPE_STRING](value);
-    }
     if (type === DATA_TYPE_INTEGER) {
       return map[DATA_TYPE_INTEGER](value);
     }
+    if (type === DATA_TYPE_STRING) {
+      return map[DATA_TYPE_STRING](value);
+    }
     if (valueType === typeNameMap[type]) {
-      if (type === DATA_TYPE_ARRAY && !Array.isArray(value)) {
-        return [];
+      if (type === DATA_TYPE_ARRAY) {
+        return Array.isArray(value) ? value : [];
       }
-      if (type === DATA_TYPE_OBJECT && Array.isArray(value)) {
-        return null;
+      if (type === DATA_TYPE_OBJECT) {
+        return _.isPlainObject(value) ? value : null;
       }
       return value;
     }

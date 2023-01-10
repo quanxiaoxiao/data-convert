@@ -19,3 +19,5 @@ const convert = (schema) => {
 };
 
 export default convert;
+
+export { convertDataValue };
