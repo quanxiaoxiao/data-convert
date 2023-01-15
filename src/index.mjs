@@ -1,4 +1,5 @@
 import convertDataValue from './convertDataValue.mjs';
+import checkDataValid from './checkDataValid.mjs';
 
 const convert = (schema) => {
   const keys = Object.keys(schema);
@@ -20,4 +21,7 @@ const convert = (schema) => {
 
 export default convert;
 
-export { convertDataValue };
+export {
+  convertDataValue,
+  checkDataValid,
+};
