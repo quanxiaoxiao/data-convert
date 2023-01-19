@@ -85,7 +85,7 @@ const handler = {
         const opName = opNames[0];
         and.push({
           dataKey,
-          match: ops[opName](valueMatch[opName]),
+          match: ops[opName].fn(valueMatch[opName]),
         });
       } else {
         and.push({
