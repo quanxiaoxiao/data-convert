@@ -1,60 +1,111 @@
 import _ from 'lodash';
+import ops from './lib/ops.mjs';
 
 const keywords = [
   '$map',
-  '$reduce',
+  '$get',
   '$filter',
+  '$join',
+  '$reduce',
   '$group',
 ];
 
-const handler = {
-  $map: (obj) => {
-    if (!_.isPlainObject(obj)) {
-      return (data) => data;
+const checkoutData = (dataKey, dataValue, ref, data) => {
+  if (ref == null) {
+    return {};
+  }
+  if (ref === 1) {
+    return {
+      [dataKey]: dataValue,
+    };
+  }
+  if (typeof ref === 'string') {
+    if (ref[0] === '$') {
+      return {
+        [dataKey]: _.get(data, ref.slice(1), null),
+      };
     }
-    const keys = Object
-      .keys(obj);
+    return {
+      [dataKey]: ref,
+    };
+  }
+  if (_.isPlainObject(ref)) {
+    if (_.isEmpty(ref)) {
+      return {};
+    }
+    return {
+      [dataKey]: Object.keys(ref).reduce((acc, subDataKey) => ({
+        ...acc,
+        ...checkoutData(subDataKey, _.get(dataValue, subDataKey, null), ref[subDataKey], data),
+      }), {}),
+    };
+  }
+  return {};
+};
+
+const handler = {
+  $map: (express) => {
+    if (!_.isPlainObject(express)) {
+      console.warn(`$map express \`${JSON.stringify(express)}\` invalid`);
+      return (arr) => (Array.isArray(arr) ? arr.map(() => ({})) : []);
+    }
+    const dataKeys = Object
+      .keys(express);
     return (arr) => {
       if (!Array.isArray(arr)) {
         return [];
       }
-      const fn = (d) => keys.reduce((acc, dataKey) => {
-        const dataValue = obj[dataKey];
-        if (dataValue == null) {
-          return acc;
+      return arr.map((d) => dataKeys.reduce((acc, dataKey) => ({
+        ...acc,
+        ...checkoutData(dataKey, _.get(d, dataKey, null), express[dataKey], d),
+      }), {}));
+    };
+  },
+  $get: (express) => (d) => _.get(d, express, null),
+  $filter: (express) => {
+    if (!_.isPlainObject(express) && !Array.isArray(express)) {
+      console.warn(`$filter express \`${JSON.stringify(express)}\` invalid`);
+      return (arr) => (Array.isArray(arr) ? arr : []);
+    }
+    /*
+    if (Array.isArray(express)) {
+    }
+    */
+    const and = [];
+    const dataKeys = Object.keys(express);
+    for (let i = 0; i < dataKeys.length; i++) {
+      const dataKey = dataKeys[i];
+      const valueMatch = express[dataKey];
+      if (_.isPlainObject(valueMatch)) {
+        const opNames = Object.keys(valueMatch);
+        if (opNames.length !== 1 || !ops[opNames[0]]) {
+          console.warn(`$filter \`${dataKey}\` invalid op, \`${JSON.stringify(valueMatch)}\``);
+          continue;
         }
-        if (dataValue === 1) {
-          return {
-            ...acc,
-            [dataKey]: _.get(d, dataKey, null),
-          };
-        }
-        const dataValueType = typeof dataValue;
-        if (dataValueType === 'string') {
-          if (dataValue[0] === '$') {
-            return {
-              ...acc,
-              [dataKey]: _.get(d, dataValue.slice(1)),
-            };
-          }
-          return {
-            ...acc,
-            [dataKey]: dataValue,
-          };
-        }
-        if (_.isPlainObject(dataValueType)) {
-          return acc;
-        }
-        return acc;
-      }, {});
-      return arr.map(fn);
+        const opName = opNames[0];
+        and.push({
+          dataKey,
+          match: ops[opName](valueMatch[opName]),
+        });
+      } else {
+        and.push({
+          dataKey,
+          match: (v) => v === valueMatch,
+        });
+      }
+    }
+    return (arr) => {
+      if (!Array.isArray(arr)) {
+        return [];
+      }
+      return arr.filter((d) => and.every((expressItem) => expressItem.match(d[expressItem.dataKey])));
     };
   },
 };
 
 export default (express) => {
   if (!Array.isArray(express)) {
-    console.error(`express invalid \`${JSON.stringify(express)}\``);
+    console.warn(`express invalid \`${JSON.stringify(express)}\``);
     return () => null;
   }
   const commandList = [];
@@ -70,10 +121,6 @@ export default (express) => {
     }
   }
   return (data) => {
-    if (!Array.isArray(data)) {
-      console.error(`data invalid \`${JSON.stringify(data)}\``);
-      return null;
-    }
     if (_.isEmpty(commandList)) {
       return data;
     }
