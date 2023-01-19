@@ -432,6 +432,44 @@ test('projection filter', (t) => {
   t.deepEqual(
     projection([
       {
+        $filter: {
+          age: {
+            $and: [
+              {
+                $gte: 30,
+              },
+              {
+                $lt: 35,
+              },
+            ],
+          },
+        },
+      },
+    ])(data),
+    data.filter((d) => d.age >= 30 && d.age < 35),
+  );
+  t.deepEqual(
+    projection([
+      {
+        $filter: {
+          age: {
+            $or: [
+              {
+                $lt: 30,
+              },
+              {
+                $gt: 35,
+              },
+            ],
+          },
+        },
+      },
+    ])(data),
+    data.filter((d) => d.age < 30 || d.age > 35),
+  );
+  t.deepEqual(
+    projection([
+      {
         $filter: [
           {
             age: 30,
@@ -503,5 +541,66 @@ test('projection filter', (t) => {
       },
     ])(data),
     data.filter((d) => /^a[0-9]$/.test(d.name)),
+  );
+  t.deepEqual(
+    projection([
+      {
+        $filter: {
+          name: {
+            $in: ['cqq', 'quan'],
+          },
+        },
+      },
+    ])(data),
+    data.filter((d) => ['cqq', 'quan'].includes(d.name)),
+  );
+  t.deepEqual(
+    projection([
+      {
+        $filter: {
+          name: {
+            $nin: ['cqq', 'quan'],
+          },
+        },
+      },
+    ])(data),
+    data.filter((d) => !['cqq', 'quan'].includes(d.name)),
+  );
+  t.deepEqual(
+    projection([
+      {
+        $filter: {
+          age: {
+            $gt: 33,
+          },
+        },
+      },
+    ])(data),
+    data.filter((d) => d.age > 33),
+  );
+  t.deepEqual(
+    projection([
+      {
+        $filter: {
+          age: {
+            $gt: 33,
+            $lt: 18,
+          },
+        },
+      },
+    ])(data),
+    data,
+  );
+  t.deepEqual(
+    projection([
+      {
+        $filter: {
+          name: {
+            $in: [{}],
+          },
+        },
+      },
+    ])(data),
+    data,
   );
 });

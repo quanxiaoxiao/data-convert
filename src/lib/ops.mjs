@@ -1,5 +1,10 @@
 const normalTypes = ['number', 'string', 'boolean', 'null'];
 
+// '$and',
+// '$not',
+// '$or',
+// '$nor',
+
 const ops = {
   $ne: {
     schema: {
@@ -109,5 +114,50 @@ const ops = {
     },
   },
 };
+
+const oneOf = Object.keys(ops).map((opName) => ({
+  properties: {
+    [opName]: ops[opName].schema,
+  },
+  required: [opName],
+  additionalProperties: false,
+}));
+
+/*
+const $and = {
+  $and: {
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        oneOf,
+      },
+      minItems: 1,
+    },
+    fn: () => false,
+  },
+};
+
+const $or = {
+  $and: {
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        oneOf,
+      },
+      minItems: 1,
+    },
+    fn: (arr) => {
+      const expressList = arr.map((item) => {
+      });
+      return (d) => expressList.some((opItem) => opitem.fn(d[opItem.dataKey]));
+    },
+  },
+};
+
+ops.$and = $and;
+ops.$or = $or;
+*/
 
 export default ops;

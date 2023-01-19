@@ -1,5 +1,7 @@
 import _ from 'lodash';
+import Ajv from 'ajv';
 import ops from './lib/ops.mjs';
+import checkoutData from './lib/checkoutData.mjs';
 
 const keywords = [
   '$map',
@@ -8,40 +10,8 @@ const keywords = [
   '$join',
   '$reduce',
   '$group',
+  '$find',
 ];
-
-const checkoutData = (dataKey, dataValue, ref, data) => {
-  if (ref == null) {
-    return {};
-  }
-  if (ref === 1) {
-    return {
-      [dataKey]: dataValue,
-    };
-  }
-  if (typeof ref === 'string') {
-    if (ref[0] === '$') {
-      return {
-        [dataKey]: _.get(data, ref.slice(1), null),
-      };
-    }
-    return {
-      [dataKey]: ref,
-    };
-  }
-  if (_.isPlainObject(ref)) {
-    if (_.isEmpty(ref)) {
-      return {};
-    }
-    return {
-      [dataKey]: Object.keys(ref).reduce((acc, subDataKey) => ({
-        ...acc,
-        ...checkoutData(subDataKey, _.get(dataValue, subDataKey, null), ref[subDataKey], data),
-      }), {}),
-    };
-  }
-  return {};
-};
 
 const handler = {
   $map: (express) => {
@@ -83,9 +53,18 @@ const handler = {
           continue;
         }
         const opName = opNames[0];
+        const opItem = ops[opName];
+        if (opItem.schema) {
+          const ajv = new Ajv();
+          const validate = ajv.compile(opItem.schema);
+          if (!validate(valueMatch[opName])) {
+            console.warn(`$filter \`${dataKey}\` invalid op, \`${JSON.stringify(validate.errors)}\``);
+            continue;
+          }
+        }
         and.push({
           dataKey,
-          match: ops[opName].fn(valueMatch[opName]),
+          match: opItem.fn(valueMatch[opName]),
         });
       } else {
         and.push({
