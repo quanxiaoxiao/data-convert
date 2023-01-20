@@ -428,7 +428,6 @@ test('projection filter', (t) => {
     ])(data),
     data.filter((d) => d.age === 30),
   );
-  /*
   t.deepEqual(
     projection([
       {
@@ -453,6 +452,37 @@ test('projection filter', (t) => {
       {
         $filter: {
           age: {
+            $and: [
+              {
+                $gte: 30,
+              },
+              {
+                $lts: 35,
+              },
+            ],
+          },
+        },
+      },
+    ])(data),
+    data,
+  );
+  t.deepEqual(
+    projection([
+      {
+        $filter: {
+          age: {
+            $and: {},
+          },
+        },
+      },
+    ])(data),
+    data,
+  );
+  t.deepEqual(
+    projection([
+      {
+        $filter: {
+          age: {
             $or: [
               {
                 $lt: 30,
@@ -467,6 +497,7 @@ test('projection filter', (t) => {
     ])(data),
     data.filter((d) => d.age < 30 || d.age > 35),
   );
+  /*
   t.deepEqual(
     projection([
       {

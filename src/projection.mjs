@@ -1,7 +1,6 @@
 import _ from 'lodash';
-import Ajv from 'ajv';
-import ops from './lib/ops.mjs';
 import checkoutData from './lib/checkoutData.mjs';
+import generateLogics from './lib/generateLogics.mjs';
 
 const keywords = [
   '$map',
@@ -41,41 +40,13 @@ const handler = {
     if (Array.isArray(express)) {
     }
     */
-    const and = [];
-    const dataKeys = Object.keys(express);
-    for (let i = 0; i < dataKeys.length; i++) {
-      const dataKey = dataKeys[i];
-      const valueMatch = express[dataKey];
-      if (_.isPlainObject(valueMatch)) {
-        const opNames = Object.keys(valueMatch);
-        if (opNames.length !== 1 || !ops[opNames[0]]) {
-          console.warn(`$filter \`${dataKey}\` invalid op, \`${JSON.stringify(valueMatch)}\``);
-          continue;
-        }
-        const opName = opNames[0];
-        const opItem = ops[opName];
-        if (opItem.schema) {
-          const ajv = new Ajv();
-          const validate = ajv.compile(opItem.schema);
-          if (!validate(valueMatch[opName])) {
-            console.warn(`$filter \`${dataKey}\` invalid op, \`${JSON.stringify(validate.errors)}\``);
-            continue;
-          }
-        }
-        and.push({
-          dataKey,
-          match: opItem.fn(valueMatch[opName]),
-        });
-      } else {
-        and.push({
-          dataKey,
-          match: (v) => v === valueMatch,
-        });
-      }
-    }
+    const and = generateLogics(express);
     return (arr) => {
       if (!Array.isArray(arr)) {
         return [];
+      }
+      if (_.isEmpty(and)) {
+        return arr;
       }
       return arr.filter((d) => and.every((expressItem) => expressItem.match(d[expressItem.dataKey])));
     };
