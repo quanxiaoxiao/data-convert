@@ -634,4 +634,91 @@ test('projection filter', (t) => {
     ])(data),
     data,
   );
+  t.deepEqual(
+    projection([
+      {
+        $filter: {
+          name: {
+            $not: {
+              $eq: 'quan',
+            },
+          },
+        },
+      },
+    ])(data),
+    data.filter((d) => d.name !== 'quan'),
+  );
+  t.deepEqual(
+    projection([
+      {
+        $filter: {
+          age: {
+            $not: {
+              $lt: 30,
+            },
+          },
+        },
+      },
+    ])(data),
+    data.filter((d) => d.age >= 30),
+  );
+  t.deepEqual(
+    projection([
+      {
+        $filter: {
+          age: {
+            $not: {
+              $lte: 30,
+            },
+          },
+        },
+      },
+    ])(data),
+    data.filter((d) => d.age > 30),
+  );
+  t.deepEqual(
+    projection([
+      {
+        $filter: {
+          age: {
+            $not: {
+              $and: [
+                {
+                  $gte: 30,
+                },
+              ],
+            },
+          },
+        },
+      },
+    ])(data),
+    data.filter((d) => !(d.age >= 30)),
+  );
+  t.deepEqual(
+    projection([
+      {
+        $filter: {
+          age: {
+            $not: {
+              $ll: 33,
+            },
+          },
+        },
+      },
+    ])(data),
+    data,
+  );
+  t.deepEqual(
+    projection([
+      {
+        $filter: {
+          age: {
+            $not: {
+            },
+          },
+        },
+      },
+    ])(data),
+    data,
+  );
 });

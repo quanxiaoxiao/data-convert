@@ -150,6 +150,37 @@ const generateCompare = (opName, valueMatch, dataKey) => {
   return opItem.fn(valueMatch[opName]);
 };
 
+const generateOpMatch = (opName, valueMatch, dataKey) => {
+  if (opName === '$and' || opName === '$or') {
+    const ajv = new Ajv();
+    const validate = ajv.compile(schema);
+    if (!validate(valueMatch[opName])) {
+      console.warn(`$filter \`${dataKey}\` invalid op, \`${JSON.stringify(validate.errors)}\``);
+      return null;
+    }
+    const compareList = [];
+    for (let i = 0; i < valueMatch[opName].length; i++) {
+      const matchItem = valueMatch[opName][i];
+      const compare = generateCompare(Object.keys(matchItem)[0], matchItem, dataKey);
+      if (compare) {
+        compareList.push(compare);
+      }
+    }
+    if (_.isEmpty(compareList)) {
+      return null;
+    }
+    if (opName === '$and') {
+      return (d) => compareList.every((match) => match(d));
+    }
+    return (d) => compareList.some((match) => match(d));
+  }
+  const compare = generateCompare(opName, valueMatch, dataKey);
+  if (!compare) {
+    return null;
+  }
+  return (d) => compare(d);
+};
+
 const generateLogics = (obj) => {
   const and = [];
   const dataKeys = Object.keys(obj);
@@ -163,40 +194,40 @@ const generateLogics = (obj) => {
         continue;
       }
       const opName = opNames[0];
-      if (opName === '$and' || opName === '$or') {
+      if (opName === '$not') {
+        if (_.isEmpty(valueMatch.$not)) {
+          continue;
+        }
         const ajv = new Ajv();
-        const validate = ajv.compile(schema);
-        if (!validate(valueMatch[opName])) {
+        const validate = ajv.compile({
+          type: 'object',
+          properties: {
+            ...oneOf.reduce((acc, schemaItem) => ({
+              ...acc,
+              ...schemaItem.properties,
+            }), {}),
+            $and: schema,
+            $or: schema,
+          },
+          additionalProperties: false,
+        });
+        if (!validate(valueMatch.$not)) {
           console.warn(`$filter \`${dataKey}\` invalid op, \`${JSON.stringify(validate.errors)}\``);
           continue;
         }
-        const compareList = [];
-        for (let j = 0; j < valueMatch[opName].length; j++) {
-          const matchItem = valueMatch[opName][j];
-          const compare = generateCompare(Object.keys(matchItem)[0], matchItem, dataKey);
-          if (compare) {
-            compareList.push(compare);
-          }
-        }
-        if (!_.isEmpty(compareList)) {
-          if (opName === '$and') {
-            and.push({
-              dataKey,
-              match: (d) => compareList.every((match) => match(d)),
-            });
-          } else if (opName === '$or') {
-            and.push({
-              dataKey,
-              match: (d) => compareList.some((match) => match(d)),
-            });
-          }
-        }
-      } else {
-        const compare = generateCompare(opName, valueMatch, dataKey);
+        const compare = generateOpMatch(Object.keys(valueMatch.$not)[0], valueMatch.$not, dataKey);
         if (compare) {
           and.push({
             dataKey,
-            match: compare,
+            match: (d) => !compare(d),
+          });
+        }
+      } else {
+        const opMatch = generateOpMatch(opName, valueMatch, dataKey);
+        if (opMatch) {
+          and.push({
+            dataKey,
+            match: opMatch,
           });
         }
       }
