@@ -153,6 +153,19 @@ test('projection map', (t) => {
     projection([
       {
         $map: {
+          name: 1,
+          quan: '$',
+        },
+      },
+    ])(data),
+    [
+      { name: 'cqq', quan: JSON.parse(JSON.stringify(data[0])) },
+    ],
+  );
+  t.deepEqual(
+    projection([
+      {
+        $map: {
           name: '$name',
         },
       },

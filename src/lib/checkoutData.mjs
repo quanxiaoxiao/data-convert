@@ -11,6 +11,11 @@ const checkoutData = (dataKey, dataValue, ref, data) => {
   }
   if (typeof ref === 'string') {
     if (ref[0] === '$') {
+      if (ref === '$') {
+        return {
+          [dataKey]: data,
+        };
+      }
       return {
         [dataKey]: _.get(data, ref.slice(1), null),
       };
