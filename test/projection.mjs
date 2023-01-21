@@ -1,4 +1,5 @@
 import test from 'ava'; // eslint-disable-line
+import _ from 'lodash';
 import projection from '../src/projection.mjs';
 
 test('projection', (t) => {
@@ -345,7 +346,7 @@ test('projection map', (t) => {
   );
 });
 
-test('projection filter', (t) => {
+test('projection $filter', (t) => {
   const data = [
     {
       name: 'cqq',
@@ -720,3 +721,133 @@ test('projection filter', (t) => {
     data.filter((d) => d.age === 30 || d.name === 'foo'),
   );
 });
+
+test('projection $find', (t) => {
+  const data = [
+    {
+      name: 'cqq',
+      age: 30,
+    },
+    {
+      name: 'quan',
+      age: 31,
+    },
+    {
+      name: 'norice',
+      age: 32,
+    },
+    {
+      name: 'foo',
+      age: 29,
+    },
+    {
+      name: 'big',
+      age: 30,
+    },
+    {
+      name: 'a1',
+      age: 34,
+    },
+    {
+      name: 'A1',
+      age: 19,
+    },
+    {
+      name: 'a2',
+      age: 29,
+    },
+    {
+      name: 'b1',
+      age: 27,
+    },
+  ];
+  t.deepEqual(
+    projection([
+      {
+        $find: {
+          name: 'cqq',
+        },
+      },
+    ])(data),
+    data.find((d) => d.name === 'cqq'),
+  );
+  t.deepEqual(
+    projection([
+      {
+        $find: {
+          age: {
+            $gt: 28,
+          },
+          name: 'cqq',
+        },
+      },
+    ])(data),
+    data.find((d) => d.age > 28 && d.name === 'cqq'),
+  );
+  t.deepEqual(
+    projection([
+      {
+        $find: [
+          {
+            name: 'cqq',
+          },
+          {
+            name: 'quan',
+          },
+        ],
+      },
+    ])(data),
+    data.find((d) => d.name === 'cqq' || d.name === 'quan'),
+  );
+});
+
+/*
+test('projection $group', (t) => {
+  const data = [
+    {
+      name: 'cqq',
+      age: 30,
+    },
+    {
+      name: 'quan',
+      age: 31,
+    },
+    {
+      name: 'norice',
+      age: 32,
+    },
+    {
+      name: 'foo',
+      age: 29,
+    },
+    {
+      name: 'big',
+      age: 30,
+    },
+    {
+      name: 'a1',
+      age: 34,
+    },
+    {
+      name: 'A1',
+      age: 19,
+    },
+    {
+      name: 'a2',
+      age: 29,
+    },
+    {
+      name: 'b1',
+      age: 27,
+    },
+  ];
+  t.deepEqual(
+    projection([
+      {
+        $group: 'name',
+      },
+    ])(data),
+    _.groupAt(data, 'name'),
+  );
+});
+*/

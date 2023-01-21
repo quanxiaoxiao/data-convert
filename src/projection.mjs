@@ -60,6 +60,35 @@ const handler = {
       return arr.filter((d) => logicList.some((and) => and.every((expressItem) => expressItem.match(d[expressItem.dataKey]))));
     };
   },
+  $find: (express) => {
+    if (!_.isPlainObject(express) && !Array.isArray(express)) {
+      console.warn(`$find express \`${JSON.stringify(express)}\` invalid`);
+      return () => null;
+    }
+    const logicList = [];
+    if (Array.isArray(express)) {
+      for (let i = 0; i < express.length; i++) {
+        const and = generateLogics(express[i]);
+        if (and) {
+          logicList.push(and);
+        }
+      }
+    } else {
+      const and = generateLogics(express);
+      if (and) {
+        logicList.push(and);
+      }
+    }
+    if (_.isEmpty(logicList)) {
+      return () => null;
+    }
+    return (arr) => {
+      if (!Array.isArray(arr)) {
+        return null;
+      }
+      return arr.find((d) => logicList.some((and) => and.every((expressItem) => expressItem.match(d[expressItem.dataKey]))));
+    };
+  },
 };
 
 export default (express) => {
