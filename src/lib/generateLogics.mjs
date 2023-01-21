@@ -3,7 +3,6 @@ import _ from 'lodash';
 
 const normalTypes = ['number', 'string', 'boolean', 'null'];
 
-// '$not',
 // '$nor',
 
 const ops = {

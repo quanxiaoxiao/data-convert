@@ -36,19 +36,28 @@ const handler = {
       console.warn(`$filter express \`${JSON.stringify(express)}\` invalid`);
       return (arr) => (Array.isArray(arr) ? arr : []);
     }
-    /*
+    const logicList = [];
     if (Array.isArray(express)) {
+      for (let i = 0; i < express.length; i++) {
+        const and = generateLogics(express[i]);
+        if (and) {
+          logicList.push(and);
+        }
+      }
+    } else {
+      const and = generateLogics(express);
+      if (and) {
+        logicList.push(and);
+      }
     }
-    */
-    const and = generateLogics(express);
+    if (_.isEmpty(logicList)) {
+      return (arr) => (Array.isArray(arr) ? arr : []);
+    }
     return (arr) => {
       if (!Array.isArray(arr)) {
         return [];
       }
-      if (_.isEmpty(and)) {
-        return arr;
-      }
-      return arr.filter((d) => and.every((expressItem) => expressItem.match(d[expressItem.dataKey])));
+      return arr.filter((d) => logicList.some((and) => and.every((expressItem) => expressItem.match(d[expressItem.dataKey]))));
     };
   },
 };
