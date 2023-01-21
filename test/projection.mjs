@@ -3,12 +3,36 @@ import _ from 'lodash';
 import projection from '../src/projection.mjs';
 
 test('projection', (t) => {
-  t.is(projection('aaa')([]), null);
+  t.throws(() => {
+    projection('aaa')([]);
+  });
+  t.throws(() => {
+    projection([
+      {
+        $filter: {},
+        $get: 'aa',
+      },
+    ])([]);
+  });
+  t.throws(() => {
+    projection([
+      {
+        $notFound: 'xxxxx',
+      },
+    ])([]);
+  });
   t.deepEqual(projection([])('bbb'), 'bbb');
   t.deepEqual(projection([])([{ name: 'cqq' }]), [{ name: 'cqq' }]);
 });
 
 test('projection get', (t) => {
+  t.throws(() => {
+    projection([
+      {
+        $get: {},
+      },
+    ])({ name: 'aaa' });
+  });
   t.is(
     projection([
       {
@@ -65,46 +89,34 @@ test('projection map', (t) => {
       },
     },
   ];
-  t.deepEqual(
+  t.throws(() => {
     projection([
       {
         $map: 1,
       },
-    ])(data),
-    [
-      {},
-    ],
-  );
-  t.deepEqual(
+    ]);
+  });
+  t.throws(() => {
     projection([
       {
         $map: true,
       },
-    ])(data),
-    [
-      {},
-    ],
-  );
-  t.deepEqual(
+    ]);
+  });
+  t.throws(() => {
     projection([
       {
         $map: null,
       },
-    ])(data),
-    [
-      {},
-    ],
-  );
-  t.deepEqual(
+    ]);
+  });
+  t.throws(() => {
     projection([
       {
         $map: ['name'],
       },
-    ])(data),
-    [
-      {},
-    ],
-  );
+    ]);
+  });
   t.deepEqual(
     projection([
       {
@@ -401,14 +413,13 @@ test('projection $filter', (t) => {
     ])(true),
     [],
   );
-  t.deepEqual(
+  t.throws(() => {
     projection([
       {
         $filter: 'xxx',
       },
-    ])(data),
-    JSON.parse(JSON.stringify(data)),
-  );
+    ]);
+  });
   t.deepEqual(
     projection([
       {
@@ -448,7 +459,7 @@ test('projection $filter', (t) => {
     ])(data),
     data.filter((d) => d.age >= 30 && d.age < 35),
   );
-  t.deepEqual(
+  t.throws(() => {
     projection([
       {
         $filter: {
@@ -464,10 +475,9 @@ test('projection $filter', (t) => {
           },
         },
       },
-    ])(data),
-    data,
-  );
-  t.deepEqual(
+    ]);
+  });
+  t.throws(() => {
     projection([
       {
         $filter: {
@@ -476,9 +486,8 @@ test('projection $filter', (t) => {
           },
         },
       },
-    ])(data),
-    data,
-  );
+    ]);
+  });
   t.deepEqual(
     projection([
       {
@@ -593,7 +602,7 @@ test('projection $filter', (t) => {
     ])(data),
     data.filter((d) => d.age > 33),
   );
-  t.deepEqual(
+  t.throws(() => {
     projection([
       {
         $filter: {
@@ -603,10 +612,9 @@ test('projection $filter', (t) => {
           },
         },
       },
-    ])(data),
-    data,
-  );
-  t.deepEqual(
+    ]);
+  });
+  t.throws(() => {
     projection([
       {
         $filter: {
@@ -615,9 +623,8 @@ test('projection $filter', (t) => {
           },
         },
       },
-    ])(data),
-    data,
-  );
+    ]);
+  });
   t.deepEqual(
     projection([
       {
@@ -678,7 +685,7 @@ test('projection $filter', (t) => {
     ])(data),
     data.filter((d) => !(d.age >= 30)),
   );
-  t.deepEqual(
+  t.throws(() => {
     projection([
       {
         $filter: {
@@ -689,9 +696,8 @@ test('projection $filter', (t) => {
           },
         },
       },
-    ])(data),
-    data,
-  );
+    ]);
+  });
   t.deepEqual(
     projection([
       {
@@ -723,6 +729,15 @@ test('projection $filter', (t) => {
 });
 
 test('projection $find', (t) => {
+  t.throws(() => {
+    projection(
+      [
+        {
+          $find: 'xxx',
+        },
+      ],
+    )();
+  });
   const data = [
     {
       name: 'cqq',
@@ -799,9 +814,35 @@ test('projection $find', (t) => {
     ])(data),
     data.find((d) => d.name === 'cqq' || d.name === 'quan'),
   );
+  t.deepEqual(
+    projection([
+      {
+        $find: [
+          {
+          },
+        ],
+      },
+    ])(data),
+    data[0],
+  );
+  t.deepEqual(
+    projection([
+      {
+        $find: [],
+      },
+    ])(data),
+    data[0],
+  );
+  t.deepEqual(
+    projection([
+      {
+        $find: {},
+      },
+    ])(data),
+    data[0],
+  );
 });
 
-/*
 test('projection $group', (t) => {
   const data = [
     {
@@ -847,7 +888,6 @@ test('projection $group', (t) => {
         $group: 'name',
       },
     ])(data),
-    _.groupAt(data, 'name'),
+    _.groupBy(data, 'name'),
   );
 });
-*/

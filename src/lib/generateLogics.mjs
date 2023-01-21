@@ -135,15 +135,13 @@ const schema = {
 const generateCompare = (opName, valueMatch, dataKey) => {
   const opItem = ops[opName];
   if (!opItem) {
-    console.warn(`$filter \`${dataKey}\` invalid op \`${opName}\``);
-    return null;
+    throw new Error(`\`${dataKey}\` invalid op \`${opName}\``);
   }
   if (opItem.schema) {
     const ajv = new Ajv();
     const validate = ajv.compile(opItem.schema);
     if (!validate(valueMatch[opName])) {
-      console.warn(`$filter \`${dataKey}\` invalid op, \`${JSON.stringify(validate.errors)}\``);
-      return null;
+      throw new Error(`\`${dataKey}\` invalid op, \`${JSON.stringify(validate.errors)}\``);
     }
   }
   return opItem.fn(valueMatch[opName]);
@@ -154,16 +152,13 @@ const generateOpMatch = (opName, valueMatch, dataKey) => {
     const ajv = new Ajv();
     const validate = ajv.compile(schema);
     if (!validate(valueMatch[opName])) {
-      console.warn(`$filter \`${dataKey}\` invalid op, \`${JSON.stringify(validate.errors)}\``);
-      return null;
+      throw new Error(`\`${dataKey}\` invalid op, \`${JSON.stringify(validate.errors)}\``);
     }
     const compareList = [];
     for (let i = 0; i < valueMatch[opName].length; i++) {
       const matchItem = valueMatch[opName][i];
       const compare = generateCompare(Object.keys(matchItem)[0], matchItem, dataKey);
-      if (compare) {
-        compareList.push(compare);
-      }
+      compareList.push(compare);
     }
     if (_.isEmpty(compareList)) {
       return null;
@@ -174,9 +169,6 @@ const generateOpMatch = (opName, valueMatch, dataKey) => {
     return (d) => compareList.some((match) => match(d));
   }
   const compare = generateCompare(opName, valueMatch, dataKey);
-  if (!compare) {
-    return null;
-  }
   return (d) => compare(d);
 };
 
@@ -189,8 +181,7 @@ const generateLogics = (obj) => {
     if (_.isPlainObject(valueMatch)) {
       const opNames = Object.keys(valueMatch);
       if (opNames.length !== 1) {
-        console.warn(`$filter \`${dataKey}\` invalid op, \`${JSON.stringify(valueMatch)}\``);
-        continue;
+        throw new Error(`\`${dataKey}\` invalid op, \`${JSON.stringify(valueMatch)}\``);
       }
       const opName = opNames[0];
       if (opName === '$not') {
@@ -211,8 +202,7 @@ const generateLogics = (obj) => {
           additionalProperties: false,
         });
         if (!validate(valueMatch.$not)) {
-          console.warn(`$filter \`${dataKey}\` invalid op, \`${JSON.stringify(validate.errors)}\``);
-          continue;
+          throw new Error(`$not \`${dataKey}\` invalid op, \`${JSON.stringify(validate.errors)}\``);
         }
         const compare = generateOpMatch(Object.keys(valueMatch.$not)[0], valueMatch.$not, dataKey);
         if (compare) {
