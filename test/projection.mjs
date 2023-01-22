@@ -76,7 +76,18 @@ test('projection map', (t) => {
         },
       },
     ])('asdf'),
-    [],
+    null,
+  );
+  t.deepEqual(
+    projection([
+      {
+        $map: {
+          name: 1,
+          age: 1,
+        },
+      },
+    ])({ name: 'cqq', age: 30, big: 'foo' }),
+    { name: 'cqq', age: 30 },
   );
   const data = [
     {
@@ -125,7 +136,7 @@ test('projection map', (t) => {
         },
       },
     ])({}),
-    [],
+    { name: 'xxx' },
   );
   t.deepEqual(
     projection([
@@ -159,7 +170,7 @@ test('projection map', (t) => {
         },
       },
     ])('asd'),
-    [],
+    null,
   );
   t.deepEqual(
     projection([
@@ -937,5 +948,29 @@ test('projection $join', (t) => {
       },
     ])(['aa', 'bb']),
     'aa;bb',
+  );
+});
+
+test('projection pipeline', (t) => {
+  const data = [
+    {
+      name: 'aaa',
+      value: '#f00',
+    },
+    {
+      name: 'bbb',
+      value: '#ff0',
+    },
+  ];
+  t.is(
+    projection([
+      {
+        $map: '--color-{{name}}:{{value}};',
+      },
+      {
+        $join: ' ',
+      },
+    ])(data),
+    data.map((d) => `--color-${d.name}:${d.value};`).join(' '),
   );
 });

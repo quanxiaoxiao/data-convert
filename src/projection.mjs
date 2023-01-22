@@ -17,6 +17,18 @@ const keywords = [
 ];
 
 const handler = {
+  $limit: {
+    schema: {
+      type: 'integer',
+    },
+    fn: (limit) => (arr) => {
+      if (!Array.isArray(arr)) {
+        return [];
+      }
+      return arr.slice(0, limit);
+    },
+  },
+  /*
   $reduce: {
     schema: {
       type: 'object',
@@ -31,7 +43,10 @@ const handler = {
       additionalProperties: false,
       required: ['initialValue', 'in'],
     },
+    fn: () => {
+    },
   },
+  */
   $map: {
     schema: {
       type: ['object', 'string'],
@@ -39,9 +54,6 @@ const handler = {
     fn: (express) => {
       if (typeof express === 'string') {
         return (arr) => {
-          if (!Array.isArray(arr)) {
-            return [];
-          }
           const padValue = (d) => express.replace(/{{([^}]+)}}/g, (a, b) => {
             const v = d[b];
             if (v == null) {
@@ -49,14 +61,32 @@ const handler = {
             }
             return `${v}`;
           });
+          if (arr == null) {
+            return null;
+          }
+          if (_.isPlainObject(arr)) {
+            return padValue(arr);
+          }
+          if (!Array.isArray(arr)) {
+            return [];
+          }
           return arr.map((d) => padValue(d));
         };
       }
       const dataKeys = Object
         .keys(express);
       return (arr) => {
+        if (arr == null) {
+          return null;
+        }
+        if (_.isPlainObject(arr)) {
+          return dataKeys.reduce((acc, dataKey) => ({
+            ...acc,
+            ...checkoutData(dataKey, _.get(arr, dataKey, null), express[dataKey], arr),
+          }), {});
+        }
         if (!Array.isArray(arr)) {
-          return [];
+          return null;
         }
         return arr.map((d) => dataKeys.reduce((acc, dataKey) => ({
           ...acc,
