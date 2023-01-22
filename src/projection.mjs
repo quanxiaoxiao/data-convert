@@ -9,18 +9,49 @@ const keywords = [
   '$filter',
   '$group',
   '$find',
+  '$join',
+  '$limit',
   // '$reduce',
   // '$count',
   // '$sort',
-  // '$join',
 ];
 
 const handler = {
-  $map: {
+  $reduce: {
     schema: {
       type: 'object',
+      properties: {
+        initialValue: {
+          type: ['array', 'string', 'number'],
+        },
+        in: {
+          type: 'object',
+        },
+      },
+      additionalProperties: false,
+      required: ['initialValue', 'in'],
+    },
+  },
+  $map: {
+    schema: {
+      type: ['object', 'string'],
     },
     fn: (express) => {
+      if (typeof express === 'string') {
+        return (arr) => {
+          if (!Array.isArray(arr)) {
+            return [];
+          }
+          const padValue = (d) => express.replace(/{{([^}]+)}}/g, (a, b) => {
+            const v = d[b];
+            if (v == null) {
+              return '';
+            }
+            return `${v}`;
+          });
+          return arr.map((d) => padValue(d));
+        };
+      }
       const dataKeys = Object
         .keys(express);
       return (arr) => {
@@ -112,6 +143,18 @@ const handler = {
         return {};
       }
       return _.groupBy(arr, groupName);
+    },
+  },
+  $join: {
+    schema: {
+      type: 'string',
+      nullable: false,
+    },
+    fn: (separator) => (arr) => {
+      if (!Array.isArray(arr)) {
+        return '';
+      }
+      return arr.join(separator);
     },
   },
 };

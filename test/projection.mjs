@@ -130,6 +130,30 @@ test('projection map', (t) => {
   t.deepEqual(
     projection([
       {
+        $map: 'cqq',
+      },
+    ])(['11', '22']),
+    ['cqq', 'cqq'],
+  );
+  t.deepEqual(
+    projection([
+      {
+        $map: 'cqq,{{name}}',
+      },
+    ])([{ name: 'aa' }, { name: 'bb' }]),
+    ['cqq,aa', 'cqq,bb'],
+  );
+  t.deepEqual(
+    projection([
+      {
+        $map: '{{name}}-{{age}}-{{cqq}}',
+      },
+    ])([{ name: 'aa', age: 33 }, { name: 'bb', age: 34 }]),
+    ['aa-33-', 'bb-34-'],
+  );
+  t.deepEqual(
+    projection([
+      {
         $map: {
           name: 'xxx',
         },
@@ -902,5 +926,16 @@ test('projection $group', (t) => {
       },
     ])(data),
     _.groupBy(data, 'name'),
+  );
+});
+
+test('projection $join', (t) => {
+  t.is(
+    projection([
+      {
+        $join: ';',
+      },
+    ])(['aa', 'bb']),
+    'aa;bb',
   );
 });
