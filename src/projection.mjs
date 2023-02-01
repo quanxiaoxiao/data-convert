@@ -2,6 +2,7 @@ import _ from 'lodash';
 import Ajv from 'ajv';
 import checkoutData from './lib/checkoutData.mjs';
 import generateLogics from './lib/generateLogics.mjs';
+import convertData from './convertData.mjs';
 
 const keywords = [
   '$map',
@@ -11,6 +12,7 @@ const keywords = [
   '$find',
   '$join',
   '$limit',
+  '$convert',
   // '$reduce',
   // '$count',
   // '$sort',
@@ -26,6 +28,23 @@ const handler = {
         return [];
       }
       return arr.slice(0, limit);
+    },
+  },
+  $convert: {
+    schema: {
+      type: 'object',
+    },
+    fn: (schema) => {
+      const convert = convertData(schema);
+      return (data) => {
+        if (data == null) {
+          return null;
+        }
+        if (Array.isArray(data)) {
+          return data.map((d) => convert(d));
+        }
+        return convert(data);
+      };
     },
   },
   /*
