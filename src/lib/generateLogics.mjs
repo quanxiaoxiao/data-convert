@@ -138,7 +138,9 @@ const generateCompare = (opName, valueMatch, dataKey) => {
     throw new Error(`\`${dataKey}\` invalid op \`${opName}\``);
   }
   if (opItem.schema) {
-    const ajv = new Ajv();
+    const ajv = new Ajv({
+      strict: false,
+    });
     const validate = ajv.compile(opItem.schema);
     if (!validate(valueMatch[opName])) {
       throw new Error(`\`${dataKey}\` invalid op, \`${JSON.stringify(validate.errors)}\``);
@@ -149,7 +151,9 @@ const generateCompare = (opName, valueMatch, dataKey) => {
 
 const generateOpMatch = (opName, valueMatch, dataKey) => {
   if (opName === '$and' || opName === '$or') {
-    const ajv = new Ajv();
+    const ajv = new Ajv({
+      strict: false,
+    });
     const validate = ajv.compile(schema);
     if (!validate(valueMatch[opName])) {
       throw new Error(`\`${dataKey}\` invalid op, \`${JSON.stringify(validate.errors)}\``);
@@ -188,7 +192,9 @@ const generateLogics = (obj) => {
         if (_.isEmpty(valueMatch.$not)) {
           continue;
         }
-        const ajv = new Ajv();
+        const ajv = new Ajv({
+          strict: false,
+        });
         const validate = ajv.compile({
           type: 'object',
           properties: {

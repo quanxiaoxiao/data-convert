@@ -87,7 +87,9 @@ const checkDataValid = (list, data) => {
       try {
         const schema = JSON.parse(fieldItem.schema);
         if (_.isPlainObject(schema)) {
-          const ajv = new Ajv();
+          const ajv = new Ajv({
+            strict: false,
+          });
           const validate = ajv.compile(schema);
           validateList.push(validate);
         } else {
@@ -100,7 +102,9 @@ const checkDataValid = (list, data) => {
     }
   }
   const schema = convertFieldListToDataSchema(fieldList);
-  const validate = (new Ajv()).compile(schema);
+  const validate = (new Ajv({
+    strict: false,
+  })).compile(schema);
   if (!validate(data)) {
     return JSON.stringify(validate.errors);
   }

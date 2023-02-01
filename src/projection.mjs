@@ -224,7 +224,9 @@ export default (express) => {
         const obj = expressItem[commandName];
         const commandHandler = handler[commandName];
         if (commandHandler.schema) {
-          const ajv = new Ajv();
+          const ajv = new Ajv({
+            strict: false,
+          });
           const validate = ajv.compile(commandHandler.schema);
           if (!validate(obj)) {
             throw new Error(`command \`${commandName}\` invalid \`${JSON.stringify(obj)}\``);
