@@ -2,56 +2,64 @@ import test from 'ava'; // eslint-disable-line
 import checkDataValid from '../src/checkDataValid.mjs';
 
 test('checkDataValid', (t) => {
-  let ret = checkDataValid([], {});
-  t.is(ret, undefined);
-  ret = checkDataValid([
+  let validate = checkDataValid([]);
+  t.is(validate({}), undefined);
+  t.is(validate({ name: 'cqq' }), undefined);
+  t.throws(() => {
+    checkDataValid([
+      {
+        type: 'string',
+      },
+    ]);
+  });
+  validate = checkDataValid([
     {
-      dataKey: 'name',
-      dataType: 'string',
+      name: 'name',
+      type: 'string',
       required: true,
     },
-  ], { name: '' });
-  t.true(!!ret);
-  ret = checkDataValid([
+  ]);
+  t.true(!!validate({ name: '' }));
+  validate = checkDataValid([
     {
-      dataKey: 'name',
-      dataType: 'string',
+      name: 'name',
+      type: 'string',
     },
-  ], { name: '' });
-  t.true(!ret);
-  ret = checkDataValid([
+  ]);
+  t.true(!validate({ name: '' }));
+  validate = checkDataValid([
     {
-      dataKey: 'array',
-      dataType: 'array',
+      name: 'array',
+      type: 'array',
       required: true,
     },
-  ], { array: [] });
-  t.true(!!ret);
-  ret = checkDataValid([
+  ]);
+  t.true(!!validate({ array: [] }));
+  validate = checkDataValid([
     {
-      dataKey: 'array',
-      dataType: 'array',
+      name: 'array',
+      type: 'array',
       required: true,
     },
-  ], { array: ['1'] });
-  t.true(!ret);
+  ]);
+  t.true(!validate({ array: ['1'] }));
 });
 
 test('checkDataValid individual', (t) => {
   const fieldList = [
     {
-      dataKey: 'name',
-      dataType: 'string',
+      name: 'name',
+      type: 'string',
       required: true,
     },
     {
-      dataKey: 'type',
-      dataType: 'number',
+      name: 'type',
+      type: 'number',
       required: true,
     },
     {
-      dataKey: 'dataType',
-      dataType: 'string',
+      name: 'dataType',
+      type: 'string',
       required: true,
       schema: JSON.stringify({
         type: 'object',
@@ -104,64 +112,374 @@ test('checkDataValid individual', (t) => {
       }),
     },
   ];
-  let ret = checkDataValid(fieldList, {
+  const validate = checkDataValid(fieldList);
+  t.true(!validate({
     name: 'aaa',
     type: 5,
     dataType: 'number',
-  });
-  t.true(!ret);
-  ret = checkDataValid(fieldList, {
+  }));
+  t.true(!!validate({
     name: 'aaa',
     type: 5,
     dataType: 'string',
-  });
-  t.true(!!ret);
-  ret = checkDataValid(fieldList, {
+  }));
+  t.true(!!validate({
     name: 'aaa',
     type: 6,
     dataType: 'string',
-  });
-  t.true(!!ret);
-  ret = checkDataValid(fieldList, {
+  }));
+  t.true(!!validate({
     name: 'aaa',
     type: 8,
     dataType: 'string',
-  });
-  t.true(!!ret);
-  ret = checkDataValid(fieldList, {
+  }));
+  t.true(!validate({
     name: 'aaa',
     type: 8,
     dataType: 'number',
-  });
-  t.true(!ret);
-  ret = checkDataValid(fieldList, {
+  }));
+  t.true(!validate({
     name: 'aaa',
     type: 1,
     dataType: 'string',
-  });
-  t.true(!ret);
-  ret = checkDataValid(fieldList, {
+  }));
+  t.true(!validate({
     name: 'aaa',
     type: 7,
     dataType: 'array',
-  });
-  t.true(!ret);
-  ret = checkDataValid(fieldList, {
+  }));
+  t.true(!!validate({
     name: 'aaa',
     type: 7,
     dataType: 'string',
-  });
-  t.true(!!ret);
-  ret = checkDataValid(fieldList, {
+  }));
+  t.true(!!validate({
     name: 'aaa',
     type: 15,
     dataType: 'string',
-  });
-  t.true(!!ret);
-  ret = checkDataValid(fieldList, {
+  }));
+  t.true(!validate({
     name: 'aaa',
     type: 15,
     dataType: 'array',
-  });
-  t.true(!ret);
+  }));
+});
+
+test('checkDataValid sub', (t) => {
+  const fieldList = [
+    {
+      name: 'name',
+      type: 'string',
+      required: true,
+    },
+    {
+      name: 'list',
+      type: 'array',
+      required: true,
+      list: [
+        {
+          name: 'name',
+          type: 'string',
+          required: true,
+        },
+        {
+          name: 'age',
+          type: 'integer',
+          required: true,
+        },
+      ],
+    },
+    {
+      name: 'obj',
+      type: 'object',
+      required: true,
+      list: [
+        {
+          name: 'foo',
+          type: 'string',
+          required: true,
+        },
+        {
+          name: 'list',
+          type: 'array',
+          required: true,
+          list: [
+            {
+              name: 'bar',
+              type: 'string',
+              required: true,
+            },
+          ],
+        },
+      ],
+    },
+  ];
+  const validate = checkDataValid(fieldList);
+
+  t.true(!validate({
+    name: 'aaa',
+    list: [
+      {
+        name: 'name',
+        age: 33,
+      },
+    ],
+    obj: {
+      foo: 'foo',
+      list: [
+        {
+          bar: 'xxxx',
+        },
+      ],
+    },
+  }));
+  t.true(!!validate({
+    name: 'aaa',
+    list: [],
+    obj: {
+      foo: 'foo',
+      list: [
+        {
+          bar: 'xxxx',
+        },
+      ],
+    },
+  }));
+  t.true(!!validate({
+    name: 'aaa',
+    list: [
+      {
+        name: 'name',
+        age: 'bbb',
+      },
+    ],
+    obj: {
+      foo: 'foo',
+      list: [
+        {
+          bar: 'xxxx',
+        },
+      ],
+    },
+  }));
+  t.true(!!validate({
+    name: 'aaa',
+    list: [
+      {
+        name: 'name',
+        age: 44,
+      },
+    ],
+    obj: {
+      foo: 'foo',
+    },
+  }));
+  t.true(!!validate({
+    name: 'aaa',
+    list: [
+      {
+        name: 'name',
+        age: 33,
+      },
+    ],
+    obj: {
+      foo: 'foo',
+      list: [
+        {
+          bar: 33,
+        },
+      ],
+    },
+  }));
+});
+
+test('checkDataValid schema', (t) => {
+  let validate = checkDataValid([
+    {
+      name: 'name',
+      type: 'string',
+      required: true,
+    },
+    {
+      name: 'obj',
+      type: 'object',
+      required: true,
+      schema: JSON.stringify({
+        type: 'object',
+        properties: {
+          bar: {
+            type: 'string',
+          },
+        },
+        required: ['bar'],
+      }),
+      list: [
+        {
+          name: 'name',
+          type: 'string',
+          required: true,
+        },
+        {
+          name: 'age',
+          type: 'integer',
+          required: true,
+        },
+      ],
+    },
+  ]);
+  t.true(!validate({
+    name: 'cqq',
+    bar: 'foo',
+    obj: 'xxx',
+  }));
+  t.true(!!validate({
+    name: 'cqq',
+    bar: 33,
+    obj: 'xxx',
+  }));
+  t.true(!!validate({
+    name: 'cqq',
+    obj: {
+      name: 'quan',
+      age: 33,
+    },
+  }));
+  validate = checkDataValid([
+    {
+      name: 'name',
+      type: 'string',
+      required: true,
+    },
+    {
+      name: 'obj',
+      type: 'object',
+      required: true,
+      schema: JSON.stringify({
+        type: 'object',
+        properties: {
+          obj: {
+            type: 'object',
+            properties: {
+              name: {
+                type: 'string',
+              },
+              age: {
+                type: 'integer',
+              },
+            },
+            required: ['name', 'age'],
+          },
+        },
+        required: ['obj'],
+      }),
+      list: [
+        {
+          name: 'name',
+          type: 'string',
+          required: true,
+        },
+        {
+          name: 'age',
+          type: 'number',
+          required: true,
+        },
+      ],
+    },
+  ]);
+  t.true(!validate({
+    name: 'cqq',
+    obj: {
+      name: 'quan',
+      age: 33,
+    },
+  }));
+  t.true(!!validate({
+    name: 'cqq',
+    obj: {
+      name: 'quan',
+      age: 33.3,
+    },
+  }));
+
+  t.true(!!validate({
+    name: 'cqq',
+    obj: {
+      age: 33,
+    },
+  }));
+
+  validate = checkDataValid([
+    {
+      name: 'name',
+      type: 'string',
+      required: true,
+    },
+    {
+      name: 'obj',
+      type: 'object',
+      required: true,
+      schema: JSON.stringify({
+        type: 'object',
+        properties: {
+          obj: {
+            type: 'object',
+            properties: {
+              name: {
+                type: 'string',
+              },
+              age: {
+                type: 'integer',
+              },
+            },
+            required: ['name', 'age'],
+          },
+        },
+        required: ['obj'],
+      }),
+      list: [
+        {
+          name: 'name',
+          type: 'string',
+          required: true,
+          schema: JSON.stringify({
+            type: 'object',
+            properties: {
+              big: {
+                type: 'string',
+              },
+            },
+            required: ['big'],
+          }),
+        },
+        {
+          name: 'age',
+          type: 'number',
+          required: true,
+        },
+      ],
+    },
+  ]);
+  t.true(!validate({
+    name: 'cqq',
+    obj: {
+      big: 'xxx',
+      name: 'quan',
+      age: 33,
+    },
+  }));
+  t.true(!!validate({
+    name: 'cqq',
+    obj: {
+      name: 'quan',
+      age: 33,
+    },
+  }));
+  t.true(!!validate({
+    name: 'cqq',
+    obj: {
+      big: 44,
+      name: 'quan',
+      age: 33,
+    },
+  }));
 });

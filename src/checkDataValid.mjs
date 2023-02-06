@@ -51,9 +51,29 @@ const convertFieldListToDataSchema = (fieldList) => {
     if (!projection) {
       return acc;
     }
+    if (!_.isEmpty(fieldItem.list)) {
+      if (fieldItem.type === 'object') {
+        return {
+          ...acc,
+          [fieldItem.name]: convertFieldListToDataSchema(fieldItem.list),
+        };
+      }
+      if (fieldItem.type === 'array') {
+        return {
+          ...acc,
+          [fieldItem.name]: {
+            type: 'array',
+            items: convertFieldListToDataSchema(fieldItem.list),
+            ...fieldItem.required ? {
+              minItems: 1,
+            } : {},
+          },
+        };
+      }
+    }
     return {
       ...acc,
-      [fieldItem.dataKey]: projection(fieldItem),
+      [fieldItem.name]: projection(fieldItem),
     };
   }, {});
   return {
@@ -61,59 +81,116 @@ const convertFieldListToDataSchema = (fieldList) => {
     properties: schema,
     required: fieldList
       .filter((d) => map[d.type] && d.required)
-      .map((d) => d.dataKey),
+      .map((d) => d.name),
   };
 };
 
-const checkDataValid = (list, data) => {
-  if (_.isEmpty(list)) {
-    return;
-  }
-  const fieldList = [];
-  const validateList = [];
-  for (let i = 0; i < list.length; i++) {
-    const fieldItem = list[i];
-    if (!fieldItem.dataType || !fieldItem.dataKey) {
-      continue;
-    }
-    const defaultSchema = {
-      type: fieldItem.dataType,
-      required: !!fieldItem.required,
-      dataKey: fieldItem.dataKey,
-    };
-    if (!fieldItem.schema) {
-      fieldList.push(defaultSchema);
-    } else {
+const validateField = (new Ajv({ strict: false })).compile({
+  type: 'object',
+  properties: {
+    name: {
+      type: 'string',
+    },
+    type: {
+      enum: [
+        'number',
+        'string',
+        'boolean',
+        'integer',
+        'json',
+        'array',
+        'object',
+      ],
+    },
+    required: {
+      type: 'boolean',
+    },
+    schema: {
+      type: 'string',
+    },
+    list: {
+      type: 'array',
+      items: {
+        $ref: '#',
+      },
+    },
+  },
+  required: ['name', 'type'],
+});
+
+const getValidateList = (arr, path = []) => {
+  const result = [];
+  for (let i = 0; i < arr.length; i++) {
+    const item = arr[i];
+    if (item.schema && item.schema.trim() !== '') {
       try {
-        const schema = JSON.parse(fieldItem.schema);
-        if (_.isPlainObject(schema)) {
-          const ajv = new Ajv({
-            strict: false,
-          });
-          const validate = ajv.compile(schema);
-          validateList.push(validate);
-        } else {
-          fieldList.push(defaultSchema);
-        }
+        const schema = JSON.parse(item.schema);
+        const ajv = new Ajv({
+          strict: false,
+        });
+        result.push({
+          path,
+          validate: ajv.compile(schema),
+        });
       } catch (error) {
-        console.warn(`\`${fieldItem.dataKey}\` ${error.message}`);
-        fieldList.push(defaultSchema);
+        console.warn(`\`${item.name}\` parse schema fail ${error.message}`);
       }
     }
-  }
-  const schema = convertFieldListToDataSchema(fieldList);
-  const validate = (new Ajv({
-    strict: false,
-  })).compile(schema);
-  if (!validate(data)) {
-    return JSON.stringify(validate.errors);
-  }
-  for (let i = 0; i < validateList.length; i++) {
-    const validateItem = validateList[i];
-    if (!validateItem(data)) {
-      return JSON.stringify(validateItem.errors);
+    if (!_.isEmpty(item.list)) {
+      result.push(...getValidateList(item.list, [...path, item.name]));
     }
   }
+  return result;
+};
+
+const generateValidate = (list) => {
+  const fieldList = [];
+  for (let i = 0; i < list.length; i++) {
+    const fieldItem = list[i];
+    if (!validateField(fieldItem)) {
+      throw new Error(`field invalid ${JSON.stringify(validateField.errors)}`);
+    }
+    if (!fieldItem.schema || fieldItem.schema.trim() === '') {
+      fieldList.push({
+        type: fieldItem.type,
+        name: fieldItem.name,
+        required: !!fieldItem.required,
+        list: fieldItem.list,
+      });
+    }
+  }
+  const validate = (new Ajv({
+    strict: false,
+  }))
+    .compile(convertFieldListToDataSchema(fieldList));
+  return validate;
+};
+
+const checkDataValid = (list) => {
+  if (_.isEmpty(list)) {
+    return () => {};
+  }
+  const validate = generateValidate(list);
+  const validateList = getValidateList(list, []);
+  return (data) => {
+    if (!validate(data)) {
+      return JSON.stringify(validate.errors);
+    }
+    for (let i = 0; i < validateList.length; i++) {
+      const validateItem = validateList[i];
+      const dataValue = _.isEmpty(validateItem.path)
+        ? data
+        : validateItem.path.reduce((acc, dataKey) => {
+          if (acc == null || !Object.hasOwnProperty.call(acc, dataKey)) {
+            return null;
+          }
+          return acc[dataKey];
+        }, data);
+      if (!validateItem.validate(dataValue)) {
+        return JSON.stringify(validateItem.validate.errors);
+      }
+    }
+  };
 };
 
 export default checkDataValid;
