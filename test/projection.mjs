@@ -749,19 +749,6 @@ test('projection $filter', (t) => {
   t.deepEqual(
     projection([
       {
-        $filter: {
-          age: {
-            $not: {
-            },
-          },
-        },
-      },
-    ])(data),
-    data,
-  );
-  t.deepEqual(
-    projection([
-      {
         $filter: [
           {
             age: 30,

@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import Ajv from 'ajv';
+import compare from '@quanxiaoxiao/compare';
 import checkoutData from './lib/checkoutData.mjs';
-import generateLogics from './lib/generateLogics.mjs';
 import convertData from './convertData.mjs';
 
 const keywords = [
@@ -127,28 +127,12 @@ const handler = {
       type: ['array', 'object'],
     },
     fn: (express) => {
-      const logicList = [];
-      if (Array.isArray(express)) {
-        for (let i = 0; i < express.length; i++) {
-          const and = generateLogics(express[i]);
-          if (and) {
-            logicList.push(and);
-          }
-        }
-      } else {
-        const and = generateLogics(express);
-        if (and) {
-          logicList.push(and);
-        }
-      }
-      if (_.isEmpty(logicList)) {
-        return (arr) => (Array.isArray(arr) ? arr : []);
-      }
+      const match = compare(express);
       return (arr) => {
         if (!Array.isArray(arr)) {
           return [];
         }
-        return arr.filter((d) => logicList.some((and) => and.every((expressItem) => expressItem.match(d[expressItem.dataKey]))));
+        return arr.filter((d) => match(d));
       };
     },
   },
@@ -157,28 +141,12 @@ const handler = {
       type: ['array', 'object'],
     },
     fn: (express) => {
-      const logicList = [];
-      if (Array.isArray(express)) {
-        for (let i = 0; i < express.length; i++) {
-          const and = generateLogics(express[i]);
-          if (and) {
-            logicList.push(and);
-          }
-        }
-      } else {
-        const and = generateLogics(express);
-        if (and) {
-          logicList.push(and);
-        }
-      }
-      if (_.isEmpty(logicList)) {
-        return (arr) => (Array.isArray(arr) ? arr[0] ?? null : null);
-      }
+      const match = compare(express);
       return (arr) => {
         if (!Array.isArray(arr)) {
           return null;
         }
-        return arr.find((d) => logicList.some((and) => and.every((expressItem) => expressItem.match(d[expressItem.dataKey]))));
+        return arr.find((d) => match(d));
       };
     },
   },
