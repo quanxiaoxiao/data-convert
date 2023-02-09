@@ -104,15 +104,18 @@ const validateField = (new Ajv({ strict: false })).compile({
     },
     required: {
       type: 'boolean',
+      nullable: true,
     },
     schema: {
       type: 'string',
+      nullable: true,
     },
     list: {
       type: 'array',
       items: {
         $ref: '#',
       },
+      nullable: true,
     },
   },
   required: ['name', 'type'],
