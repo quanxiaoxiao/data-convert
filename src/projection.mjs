@@ -94,23 +94,20 @@ const handler = {
       }
       const dataKeys = Object
         .keys(express);
-      return (arr) => {
-        if (arr == null) {
+      return (v) => {
+        if (v == null) {
           return null;
         }
-        if (_.isPlainObject(arr)) {
-          return dataKeys.reduce((acc, dataKey) => ({
+        if (Array.isArray(v)) {
+          return v.map((d) => dataKeys.reduce((acc, dataKey) => ({
             ...acc,
-            ...checkoutData(dataKey, _.get(arr, dataKey, null), express[dataKey], arr),
-          }), {});
+            [dataKey]: checkoutData(express[dataKey], d),
+          }), {}));
         }
-        if (!Array.isArray(arr)) {
-          return null;
-        }
-        return arr.map((d) => dataKeys.reduce((acc, dataKey) => ({
+        return dataKeys.reduce((acc, dataKey) => ({
           ...acc,
-          ...checkoutData(dataKey, _.get(d, dataKey, null), express[dataKey], d),
-        }), {}));
+          [dataKey]: checkoutData(express[dataKey], v),
+        }), {});
       };
     },
   },

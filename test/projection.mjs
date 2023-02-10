@@ -76,7 +76,70 @@ test('projection map', (t) => {
         },
       },
     ])('asdf'),
-    null,
+    { name: 1 },
+  );
+  t.deepEqual(
+    projection([
+      {
+        $map: {
+          name: '$name',
+        },
+      },
+    ])({ cqq: 'xxx' }),
+    { name: null },
+  );
+  t.deepEqual(
+    projection([
+      {
+        $map: {
+          test: true,
+          big: '$cqq',
+        },
+      },
+    ])({ cqq: 'xxx' }),
+    { test: true, big: 'xxx' },
+  );
+  t.deepEqual(
+    projection([
+      {
+        $map: {
+          test: '$',
+        },
+      },
+    ])('xxx'),
+    { test: 'xxx' },
+  );
+  t.deepEqual(
+    projection([
+      {
+        $map: {
+          test: '$',
+        },
+      },
+    ])(false),
+    { test: false },
+  );
+  t.deepEqual(
+    projection([
+      {
+        $map: {
+          arr: ['$name', 'cqq', 3, true, { big: '$age' }, { foo: 1 }],
+        },
+      },
+    ])({ name: 'xxx', age: 30 }),
+    {
+      arr: ['xxx', 'cqq', 3, true, { big: 30 }, { foo: 1 }],
+    },
+  );
+  t.deepEqual(
+    projection([
+      {
+        $map: {
+          test: true,
+        },
+      },
+    ])({ cqq: 'xxx' }),
+    { test: true },
   );
   t.deepEqual(
     projection([
@@ -87,7 +150,7 @@ test('projection map', (t) => {
         },
       },
     ])({ name: 'cqq', age: 30, big: 'foo' }),
-    { name: 'cqq', age: 30 },
+    { name: 1, age: 1 },
   );
   const data = [
     {
@@ -170,7 +233,7 @@ test('projection map', (t) => {
         },
       },
     ])('asd'),
-    null,
+    { name: 'xxx' },
   );
   t.deepEqual(
     projection([
@@ -181,7 +244,7 @@ test('projection map', (t) => {
       },
     ])(data),
     [
-      { name: 'cqq' },
+      { name: 1 },
     ],
   );
   t.deepEqual(
@@ -194,7 +257,7 @@ test('projection map', (t) => {
       },
     ])(data),
     [
-      { name: 'cqq', quan: JSON.parse(JSON.stringify(data[0])) },
+      { name: 1, quan: JSON.parse(JSON.stringify(data[0])) },
     ],
   );
   t.deepEqual(
@@ -250,19 +313,19 @@ test('projection map', (t) => {
       {
         $map: {
           name: 1,
-          age: 1,
+          age: '$age',
         },
       },
     ])(data),
     [
-      { name: 'cqq', age: 30 },
+      { name: 1, age: 30 },
     ],
   );
   t.deepEqual(
     projection([
       {
         $map: {
-          empty: 1,
+          empty: null,
         },
       },
     ])(data),
@@ -274,20 +337,20 @@ test('projection map', (t) => {
     projection([
       {
         $map: {
-          age: 1,
+          age: '$age',
           name: null,
         },
       },
     ])(data),
     [
-      { age: 30 },
+      { age: 30, name: null },
     ],
   );
   t.deepEqual(
     projection([
       {
         $map: {
-          obj: 1,
+          obj: '$obj',
         },
       },
     ])(data),
@@ -304,7 +367,7 @@ test('projection map', (t) => {
     projection([
       {
         $map: {
-          name: 1,
+          name: '$name',
           sub: {
             name: '$obj.name',
             age: '$age',
@@ -326,15 +389,15 @@ test('projection map', (t) => {
     projection([
       {
         $map: {
-          name: 1,
-          sub: {
-          },
+          name: '$name',
+          sub: {},
         },
       },
     ])(data),
     [
       {
         name: 'cqq',
+        sub: {},
       },
     ],
   );
@@ -351,9 +414,9 @@ test('projection map', (t) => {
     ])(data),
     [
       {
-        name: 'cqq',
+        name: 1,
         sub: {
-          empty: null,
+          empty: 1,
         },
       },
     ],
@@ -362,20 +425,20 @@ test('projection map', (t) => {
     projection([
       {
         $map: {
-          name: 1,
+          name: '$name',
           aa: {
-            name: 1,
+            name: '$names',
             cc: 'cc',
           },
           obj: {
-            name: 1,
+            name: '$name',
           },
           bb: {
             cc: {
               dd: '$foo',
               name: 'xxx',
               aa: '$obj.name',
-              ee: 1,
+              ee: '$ee',
               big: '$obj.empty',
             },
           },
@@ -386,7 +449,7 @@ test('projection map', (t) => {
       {
         name: 'cqq',
         obj: {
-          name: 'obj',
+          name: 'cqq',
         },
         aa: {
           name: null,

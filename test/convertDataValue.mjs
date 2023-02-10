@@ -75,6 +75,7 @@ test('convertDataValue json', (t) => {
   t.is(convertDataValue('null', DATA_TYPE_JSON), null);
   t.is(convertDataValue('aa', DATA_TYPE_JSON), null);
   t.deepEqual(convertDataValue('{}', DATA_TYPE_JSON), {});
+  t.deepEqual(convertDataValue('{fail}', DATA_TYPE_JSON), null);
   t.deepEqual(convertDataValue('{"name":"cqq"}', DATA_TYPE_JSON), { name: 'cqq' });
   t.deepEqual(convertDataValue('[]', DATA_TYPE_JSON), []);
 
@@ -103,6 +104,7 @@ test('convertDataValue object', (t) => {
   t.is(convertDataValue(1, DATA_TYPE_OBJECT), null);
   t.is(convertDataValue('aa', DATA_TYPE_OBJECT), null);
   t.is(convertDataValue('1', DATA_TYPE_OBJECT), null);
+  t.deepEqual(convertDataValue('{fail}', DATA_TYPE_OBJECT), null);
   t.is(convertDataValue(JSON.stringify('aa'), DATA_TYPE_OBJECT), null);
   t.is(convertDataValue(true, DATA_TYPE_OBJECT), null);
   t.is(convertDataValue('true', DATA_TYPE_OBJECT), null);

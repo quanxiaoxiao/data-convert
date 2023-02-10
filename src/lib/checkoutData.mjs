@@ -1,41 +1,31 @@
 import _ from 'lodash';
 
-const checkoutData = (dataKey, dataValue, ref, data) => {
-  if (ref == null) {
-    return {};
+const checkoutData = (ref, data) => {
+  const valueType = typeof ref;
+  if (ref == null
+      || valueType === 'number'
+      || valueType === 'boolean') {
+    return ref;
   }
-  if (ref === 1) {
-    return {
-      [dataKey]: dataValue,
-    };
-  }
-  if (typeof ref === 'string') {
+  if (valueType === 'string') {
     if (ref[0] === '$') {
       if (ref === '$') {
-        return {
-          [dataKey]: data,
-        };
+        return data;
       }
-      return {
-        [dataKey]: _.get(data, ref.slice(1), null),
-      };
+      return _.get(data, ref.slice(1), null);
     }
-    return {
-      [dataKey]: ref,
-    };
+    return ref;
   }
   if (_.isPlainObject(ref)) {
-    if (_.isEmpty(ref)) {
-      return {};
-    }
-    return {
-      [dataKey]: Object.keys(ref).reduce((acc, subDataKey) => ({
-        ...acc,
-        ...checkoutData(subDataKey, _.get(dataValue, subDataKey, null), ref[subDataKey], data),
-      }), {}),
-    };
+    return Object.keys(ref).reduce((acc, subDataKey) => ({
+      ...acc,
+      [subDataKey]: checkoutData(ref[subDataKey], data),
+    }), {});
   }
-  return {};
+  if (Array.isArray(ref)) {
+    return ref.map((d) => checkoutData(d, data));
+  }
+  return null;
 };
 
 export default checkoutData;
