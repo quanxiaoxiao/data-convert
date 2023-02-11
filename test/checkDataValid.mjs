@@ -61,7 +61,7 @@ test('checkDataValid individual', (t) => {
       name: 'dataType',
       type: 'string',
       required: true,
-      schema: JSON.stringify({
+      schema: {
         type: 'object',
         required: ['dataType', 'type'],
         if: {
@@ -109,7 +109,7 @@ test('checkDataValid individual', (t) => {
             },
           },
         },
-      }),
+      },
     },
   ];
   const validate = checkDataValid(fieldList);
@@ -304,7 +304,7 @@ test('checkDataValid schema', (t) => {
       name: 'obj',
       type: 'object',
       required: true,
-      schema: JSON.stringify({
+      schema: {
         type: 'object',
         properties: {
           bar: {
@@ -312,7 +312,7 @@ test('checkDataValid schema', (t) => {
           },
         },
         required: ['bar'],
-      }),
+      },
       list: [
         {
           name: 'name',
@@ -354,7 +354,7 @@ test('checkDataValid schema', (t) => {
       name: 'obj',
       type: 'object',
       required: true,
-      schema: JSON.stringify({
+      schema: {
         type: 'object',
         properties: {
           obj: {
@@ -371,7 +371,7 @@ test('checkDataValid schema', (t) => {
           },
         },
         required: ['obj'],
-      }),
+      },
       list: [
         {
           name: 'name',
@@ -418,7 +418,7 @@ test('checkDataValid schema', (t) => {
       name: 'obj',
       type: 'object',
       required: true,
-      schema: JSON.stringify({
+      schema: {
         type: 'object',
         properties: {
           obj: {
@@ -435,13 +435,13 @@ test('checkDataValid schema', (t) => {
           },
         },
         required: ['obj'],
-      }),
+      },
       list: [
         {
           name: 'name',
           type: 'string',
           required: true,
-          schema: JSON.stringify({
+          schema: {
             type: 'object',
             properties: {
               big: {
@@ -449,7 +449,7 @@ test('checkDataValid schema', (t) => {
               },
             },
             required: ['big'],
-          }),
+          },
         },
         {
           name: 'age',

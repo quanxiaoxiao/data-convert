@@ -1,6 +1,5 @@
 /* eslint consistent-return: 0 */
 import Ajv from 'ajv/dist/2019.js'; // eslint-disable-line
-// import Ajv from 'ajv';
 import _ from 'lodash';
 
 const DATA_TYPE_NUMBER = 'number';
@@ -107,7 +106,7 @@ const validateField = (new Ajv({ strict: false })).compile({
       nullable: true,
     },
     schema: {
-      type: 'string',
+      type: 'object',
       nullable: true,
     },
     list: {
@@ -125,15 +124,14 @@ const getValidateList = (arr, path = []) => {
   const result = [];
   for (let i = 0; i < arr.length; i++) {
     const item = arr[i];
-    if (item.schema && item.schema.trim() !== '') {
+    if (item.schema) {
       try {
-        const schema = JSON.parse(item.schema);
-        const ajv = new Ajv({
-          strict: false,
-        });
         result.push({
           path,
-          validate: ajv.compile(schema),
+          validate: (new Ajv({
+            strict: false,
+          }))
+            .compile(item.schema),
         });
       } catch (error) {
         console.warn(`\`${item.name}\` parse schema fail ${error.message}`);
@@ -153,7 +151,7 @@ const generateValidate = (list) => {
     if (!validateField(fieldItem)) {
       throw new Error(`field invalid ${JSON.stringify(validateField.errors)}`);
     }
-    if (!fieldItem.schema || fieldItem.schema.trim() === '') {
+    if (!fieldItem.schema) {
       fieldList.push({
         type: fieldItem.type,
         name: fieldItem.name,
