@@ -31,7 +31,9 @@ test('convertDataValue string', (t) => {
 
 test('convertDataValue integer', (t) => {
   t.is(convertDataValue('1', DATA_TYPE_INTEGER), 1);
-  t.is(convertDataValue('1.1', DATA_TYPE_INTEGER), null);
+  t.is(convertDataValue('1.1', DATA_TYPE_INTEGER), 1);
+  t.is(convertDataValue('-3.1', DATA_TYPE_INTEGER), -3);
+  t.is(convertDataValue(3.1, DATA_TYPE_INTEGER), 3);
 
   t.is(convertDataValue(1, DATA_TYPE_INTEGER), 1);
   t.true(Number.isNaN(convertDataValue(NaN, DATA_TYPE_INTEGER)));

@@ -36,13 +36,13 @@ const map = {
       return null;
     }
     const number = Number(v);
-    if (Number.isNaN(number) || !Number.isInteger(number)) {
+    if (Number.isNaN(number)) {
       return null;
     }
     if (`${number}` !== `${v}`) {
       return null;
     }
-    return number;
+    return parseInt(number, 10);
   },
   [DATA_TYPE_NUMBER]: (v) => {
     if (Number.isNaN(v)) {

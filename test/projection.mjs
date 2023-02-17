@@ -65,6 +65,14 @@ test('projection get', (t) => {
     ])({ data: { list: [{ name: 'cqq' }] } }),
     [{ name: 'cqq' }],
   );
+  t.is(
+    projection([
+      {
+        $get: 'endDate',
+      },
+    ])({ endDate: 333 }),
+    333,
+  );
 });
 
 test('projection map', (t) => {
