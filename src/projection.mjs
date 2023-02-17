@@ -1,8 +1,7 @@
 import _ from 'lodash';
 import Ajv from 'ajv';
 import compare from '@quanxiaoxiao/compare';
-import checkoutData from './lib/checkoutData.mjs';
-import convertData from './convertData.mjs';
+import select from './select.mjs';
 
 const keywords = [
   '$map',
@@ -12,7 +11,6 @@ const keywords = [
   '$find',
   '$join',
   '$limit',
-  '$convert',
   // '$reduce',
   // '$count',
   // '$sort',
@@ -28,23 +26,6 @@ const handler = {
         return [];
       }
       return arr.slice(0, limit);
-    },
-  },
-  $convert: {
-    schema: {
-      type: 'object',
-    },
-    fn: (schema) => {
-      const convert = convertData(schema);
-      return (data) => {
-        if (data == null) {
-          return null;
-        }
-        if (Array.isArray(data)) {
-          return data.map((d) => convert(d));
-        }
-        return convert(data);
-      };
     },
   },
   /*
@@ -92,22 +73,22 @@ const handler = {
           return arr.map((d) => padValue(d));
         };
       }
-      const dataKeys = Object
-        .keys(express);
+      const handleAtObject = select({
+        type: 'object',
+        properties: express,
+      });
+      const handleAtArray = select({
+        type: 'array',
+        properties: express,
+      });
       return (v) => {
         if (v == null) {
           return null;
         }
         if (Array.isArray(v)) {
-          return v.map((d) => dataKeys.reduce((acc, dataKey) => ({
-            ...acc,
-            [dataKey]: checkoutData(express[dataKey], d),
-          }), {}));
+          return handleAtArray(v);
         }
-        return dataKeys.reduce((acc, dataKey) => ({
-          ...acc,
-          [dataKey]: checkoutData(express[dataKey], v),
-        }), {});
+        return handleAtObject(v);
       };
     },
   },

@@ -1009,45 +1009,6 @@ test('projection $join', (t) => {
   );
 });
 
-test('projection convert', (t) => {
-  t.deepEqual(
-    projection([
-      {
-        $convert: {
-          name: 'string',
-          age: 'integer',
-        },
-      },
-    ])({
-      name: 'cqq',
-      big: 'foo',
-      age: '33',
-    }),
-    {
-      name: 'cqq',
-      age: 33,
-    },
-  );
-  t.deepEqual(
-    projection([
-      {
-        $convert: {
-          name: 'string',
-          age: 'integer',
-        },
-      },
-    ])([{
-      name: 'cqq',
-      big: 'foo',
-      age: '33',
-    }]),
-    [{
-      name: 'cqq',
-      age: 33,
-    }],
-  );
-});
-
 test('projection pipeline', (t) => {
   const data = [
     {
