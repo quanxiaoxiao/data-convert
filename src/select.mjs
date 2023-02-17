@@ -43,6 +43,10 @@ const checkoutData = (ref, data) => {
       if (ref === '$') {
         return data;
       }
+      const arr = ref.slice(1).split(':');
+      if (arr.length === 2 && ['string', 'number', 'boolean', 'integer'].includes(arr[1].trim())) {
+        return convertDataValue(_.get(data, arr[0].trim()), arr[1].trim());
+      }
       return _.get(data, ref.slice(1), null);
     }
     return ref;

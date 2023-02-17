@@ -131,3 +131,62 @@ test('select', (t) => {
     },
   );
 });
+
+test('select convert data value', (t) => {
+  t.deepEqual(
+    select({
+      type: 'object',
+      properties: {
+        name: 'name',
+        age: '$age:number',
+      },
+    })({
+      age: '33',
+    }),
+    {
+      name: 'name',
+      age: 33,
+    },
+  );
+  t.deepEqual(
+    select({
+      type: 'object',
+      properties: {
+        name: 'name',
+        big: '$big : integer',
+        age: '$age: number',
+        obj: {
+          good: '$good:boolean',
+        },
+      },
+    })({
+      age: '33',
+      big: '23.3',
+      good: 'true',
+    }),
+    {
+      name: 'name',
+      big: 23,
+      age: 33,
+      obj: {
+        good: true,
+      },
+    },
+  );
+  t.deepEqual(
+    select({
+      type: 'object',
+      properties: {
+        name: '$name:aaa',
+      },
+    })({
+      name: 'cqq',
+      age: '33',
+      big: '23.3',
+      good: 'true',
+    }),
+    {
+      name: null,
+    },
+  );
+});
