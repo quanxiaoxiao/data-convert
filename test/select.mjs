@@ -3,30 +3,39 @@ import select from '../src/select.mjs';
 
 test('select invalid', (t) => {
   t.throws(() => {
-    select('')([]);
+    select('');
   });
   t.throws(() => {
-    select([])([]);
+    select([]);
   });
   t.throws(() => {
-    select(1)([]);
+    select(1);
   });
   t.throws(() => {
-    select({})([]);
+    select({});
   });
   t.throws(() => {
     select({
       type: 'object',
-    })([]);
+    });
   });
   t.throws(() => {
     select({
       type: 'object',
       properties: [],
-    })([]);
+    });
   });
   t.throws(() => {
-    select({ type: 'cqq' })([]);
+    select({ type: 'cqq' });
+  });
+
+  t.throws(() => {
+    select({
+      type: 'object',
+      properties: {
+        name: '$name:aaa',
+      },
+    });
   });
 });
 
@@ -177,16 +186,105 @@ test('select convert data value', (t) => {
     select({
       type: 'object',
       properties: {
-        name: '$name:aaa',
+        name: ['$name', { type: 'boolean' }],
+        age: ['$age', { type: 'integer' }],
       },
     })({
-      name: 'cqq',
-      age: '33',
-      big: '23.3',
-      good: 'true',
+      name: 'true',
+      age: 22.33,
     }),
     {
-      name: null,
+      name: true,
+      age: 22,
+    },
+  );
+  t.deepEqual(
+    select({
+      type: 'object',
+      properties: {
+        count: '$count:integer',
+        list: [
+          '$list',
+          {
+            type: 'array',
+            properties: {
+              name: '$name',
+              obj: {
+                name: '$obj.name',
+              },
+            },
+          },
+        ],
+      },
+    })({
+      count: 123,
+      list: [
+        {
+          name: 'cqq',
+          age: 33,
+          obj: {
+            foo: 'cc',
+            name: '1',
+          },
+        },
+        {
+          name: 'big',
+          age: 99,
+          obj: {
+            foo: 'bar',
+            name: '2',
+          },
+        },
+      ],
+    }),
+    {
+      count: 123,
+      list: [
+        {
+          name: 'cqq',
+          obj: {
+            name: '1',
+          },
+        },
+        {
+          name: 'big',
+          obj: {
+            name: '2',
+          },
+        },
+      ],
+    },
+  );
+  t.deepEqual(
+    select({
+      type: 'object',
+      properties: {
+        count: '$count:integer',
+        obj: [
+          '$sub',
+          {
+            type: 'object',
+            properties: {
+              name: '$name',
+              age: '$age:integer',
+            },
+          },
+        ],
+      },
+    })({
+      count: '123.3',
+      sub: {
+        name: 'aaa',
+        age: '33',
+        foo: 'bar',
+      },
+    }),
+    {
+      count: 123,
+      obj: {
+        name: 'aaa',
+        age: 33,
+      },
     },
   );
 });

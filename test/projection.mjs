@@ -131,18 +131,6 @@ test('projection map', (t) => {
     projection([
       {
         $map: {
-          arr: ['$name', 'cqq', 3, true, { big: '$age' }, { foo: 1 }],
-        },
-      },
-    ])({ name: 'xxx', age: 30 }),
-    {
-      arr: ['xxx', 'cqq', 3, true, { big: 30 }, { foo: 1 }],
-    },
-  );
-  t.deepEqual(
-    projection([
-      {
-        $map: {
           test: true,
         },
       },
