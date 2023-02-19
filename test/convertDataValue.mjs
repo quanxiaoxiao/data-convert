@@ -25,6 +25,8 @@ test('convertDataValue', (t) => {
 test('convertDataValue string', (t) => {
   t.is(convertDataValue(1, DATA_TYPE_STRING), '1');
   t.is(convertDataValue(null, DATA_TYPE_STRING), null);
+  t.is(convertDataValue(true, DATA_TYPE_STRING), 'true');
+  t.is(convertDataValue(false, DATA_TYPE_STRING), 'false');
   t.is(convertDataValue(' 1', DATA_TYPE_STRING), ' 1');
   t.is(convertDataValue({ name: 'cqq' }, DATA_TYPE_STRING), JSON.stringify({ name: 'cqq' }));
 });

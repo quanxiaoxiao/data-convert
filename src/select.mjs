@@ -1,8 +1,11 @@
+/* eslint no-use-before-define: 0 */
 import _ from 'lodash';
 import Ajv from 'ajv';
 import convertDataValue from './convertDataValue.mjs';
 
-const ajv = new Ajv();
+const ajv = new Ajv({
+  strict: false,
+});
 
 const validate = ajv.compile({
   type: 'object',
@@ -13,7 +16,23 @@ const validate = ajv.compile({
           enum: ['object', 'array'],
         },
         properties: {
-          type: 'object',
+          anyOf: [
+            {
+              type: 'array',
+              items: [
+                {
+                  type: 'string',
+                },
+                {
+                  type: 'object',
+                },
+              ],
+              additionalItems: false,
+            },
+            {
+              type: 'object',
+            },
+          ],
         },
       },
       required: ['type', 'properties'],
@@ -23,6 +42,18 @@ const validate = ajv.compile({
       properties: {
         type: {
           enum: ['string', 'number', 'boolean', 'integer'],
+        },
+        properties: {
+          type: 'array',
+          items: [
+            {
+              type: 'string',
+            },
+            {
+              type: 'object',
+            },
+          ],
+          additionalItems: false,
         },
       },
       required: ['type'],
@@ -40,7 +71,12 @@ const generateData = (d, fieldList) => {
   return obj;
 };
 
-const getDataValue = (data, dataKey, defaultValue = null) => _.get(data, dataKey, defaultValue);
+const getDataValue = (data, dataKey, defaultValue = null) => {
+  if (dataKey == null || dataKey === '' || dataKey === '$') {
+    return data;
+  }
+  return _.get(data, dataKey, defaultValue);
+};
 
 const checkDataTypeSupport = (dataType) => {
   if (!['string', 'number', 'boolean', 'integer'].includes(dataType)) {
@@ -48,7 +84,35 @@ const checkDataTypeSupport = (dataType) => {
   }
 };
 
-const test = (exp) => {
+const selectDataValue = (express) => {
+  if (!express.startsWith('$')) {
+    throw new Error(`\`${express}\` invalid`);
+  }
+  const ret = express.slice(1).split(':');
+  if (ret.length > 2) {
+    throw new Error(`\`${express}\` invalid`);
+  }
+  const dataKey = ret[0].trim();
+  const dataType = (ret[1] || '').trim();
+  if (!dataType) {
+    return (d) => getDataValue(d, dataKey);
+  }
+  checkDataTypeSupport(dataType);
+  return (d) => convertDataValue(getDataValue(d, dataKey), dataType);
+};
+
+export const selectData = ([dataKey, schema]) => {
+  if (typeof dataKey !== 'string' || !validate(schema)) {
+    throw new Error(`\`${JSON.stringify(schema)}\` invalid`);
+  }
+  checkDataTypeSupport(schema.type);
+  return (data) => {
+    const dataValue = dataKey === '$' ? data : getDataValue(data, dataKey);
+    return convertDataValue(dataValue, schema.type);
+  };
+};
+
+const parse = (exp) => {
   const convertFieldList = (express) => {
     const keys = Object.keys(express);
     const fieldList = [];
@@ -60,22 +124,7 @@ const test = (exp) => {
         fn: () => ref,
       };
       if (typeof ref === 'string' && ref.startsWith('$')) {
-        if (ref === '$') {
-          item.fn = (d) => d;
-        } else {
-          const arr = ref.slice(1).split(':');
-          if (arr.length > 2) {
-            throw new Error(`\`${ref}\` invalid`);
-          }
-          const dataKey = arr[0].trim();
-          const dataType = (arr[1] || '').trim();
-          if (dataType) {
-            checkDataTypeSupport(dataType);
-            item.fn = (d) => convertDataValue(getDataValue(d, dataKey), dataType);
-          } else {
-            item.fn = (d) => getDataValue(d, dataKey);
-          }
-        }
+        item.fn = selectDataValue(ref);
       } else if (_.isPlainObject(ref)) {
         const subFieldList = convertFieldList(ref);
         item.fn = (d) => generateData(d, subFieldList);
@@ -83,29 +132,11 @@ const test = (exp) => {
         && ref.length === 2
         && typeof ref[0] === 'string'
         && _.isPlainObject(ref[1])) {
-        if (!ref[0].startsWith('$')) {
-          throw new Error(`\`${JSON.stringify(ref)}\` invalid`);
-        }
-        const _schema = ref[1];
-        const dataType = _schema.type;
-        const dataKey = ref[0].slice(1);
-        if (dataType === 'object' || dataType === 'array') {
-          const subFieldList = convertFieldList(_schema.properties);
-          if (dataType === 'array') {
-            item.fn = (d) => {
-              const dataValue = getDataValue(d, dataKey);
-              if (!Array.isArray(dataValue)) {
-                return [];
-              }
-              return dataValue.map((dd) => generateData(dd, subFieldList));
-            };
-          } else {
-            item.fn = (d) => generateData(getDataValue(d, dataKey), subFieldList);
-          }
-        } else {
-          checkDataTypeSupport(dataType);
-          item.fn = (d) => convertDataValue(getDataValue(d, dataKey), dataType);
-        }
+        const next = select(ref[1]);
+        item.fn = (data) => {
+          const dataValue = getDataValue(data, ref[0]);
+          return next(dataValue);
+        };
       }
       fieldList.push(item);
     }
@@ -115,16 +146,33 @@ const test = (exp) => {
   return (data) => generateData(data, fieldList);
 };
 
-const select = (schema) => {
+function select(schema) {
+  if (Array.isArray(schema)) {
+    return selectData(schema);
+  }
   if (!validate(schema)) {
     throw new Error(`select schema \`${JSON.stringify(schema)}\` invalid`);
   }
   const dataType = schema.type;
   if (dataType !== 'array' && dataType !== 'object') {
+    checkDataTypeSupport(dataType);
+    if (Array.isArray(schema.properties)) {
+      return selectData(schema.properties);
+    }
     return (data) => convertDataValue(data, dataType);
   }
-  const convert = test(schema.properties);
   if (dataType === 'array') {
+    if (Array.isArray(schema.properties)) {
+      const convert = select(schema.properties[1]);
+      const dataKey = schema.properties[0];
+      return (data) => {
+        if (!Array.isArray(data)) {
+          return [];
+        }
+        return data.map((d) => convert(getDataValue(d, dataKey)));
+      };
+    }
+    const convert = parse(schema.properties);
     return (data) => {
       if (!Array.isArray(data)) {
         return [];
@@ -132,7 +180,15 @@ const select = (schema) => {
       return data.map((d) => convert(d));
     };
   }
-  return convert;
-};
+  if (Array.isArray(schema.properties)) {
+    const convert = select(schema.properties[1]);
+    const dataKey = schema.properties[0];
+    return (data) => {
+      const dataValue = getDataValue(data, dataKey);
+      return convert(dataValue);
+    };
+  }
+  return parse(schema.properties);
+}
 
 export default select;

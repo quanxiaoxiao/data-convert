@@ -1,5 +1,23 @@
 import test from 'ava'; // eslint-disable-line
-import select from '../src/select.mjs';
+import select, { selectData } from '../src/select.mjs';
+
+test('selectData', (t) => {
+  t.throws(() => {
+    selectData(['name', { type: 'test' }]);
+  });
+  t.is(
+    selectData(['name', { type: 'string' }])({ name: 'aaa' }),
+    'aaa',
+  );
+  t.is(
+    selectData(['$', { type: 'integer' }])('33.3'),
+    33,
+  );
+  t.is(
+    selectData(['', { type: 'integer' }])('33.3'),
+    33,
+  );
+});
 
 test('select invalid', (t) => {
   t.throws(() => {
@@ -37,78 +55,163 @@ test('select invalid', (t) => {
       },
     });
   });
+
+  t.throws(() => {
+    select({
+      type: 'object',
+      properties: '$name:string',
+    });
+  });
 });
 
-test('select', (t) => {
+test('data type by: boolean,integer,string,number', (t) => {
   t.is(
-    select({
-      type: 'string',
-    })({}),
-    '{}',
+    select({ type: 'string' })('33'),
+    '33',
   );
   t.is(
-    select({
-      type: 'string',
-    })([]),
-    '[]',
+    select({ type: 'integer' })('33.3'),
+    33,
   );
   t.is(
-    select({
-      type: 'number',
-    })([]),
+    select({ type: 'number' })('33.3'),
+    33.3,
+  );
+  t.is(
+    select({ type: 'boolean' })('true'),
+    true,
+  );
+  t.is(
+    select({ type: 'boolean' })('false'),
+    false,
+  );
+  t.is(
+    select({ type: 'integer' })('xxx'),
     null,
   );
+
   t.is(
     select({
-      type: 'number',
-    })('3.3'),
-    3.3,
+      type: 'string',
+      properties: ['name', { type: 'string' }],
+    })({ name: '33.3' }),
+    '33.3',
   );
+  t.is(
+    select({
+      type: 'string',
+      properties: ['$', { type: 'integer' }],
+    })('33.3'),
+    33,
+  );
+  t.is(
+    select({
+      type: 'string',
+      properties: ['name', { type: 'integer' }],
+    })({ name: '33.3' }),
+    33,
+  );
+  t.is(
+    select({
+      type: 'string',
+      properties: ['', { type: 'number' }],
+    })('33.3'),
+    33.3,
+  );
+  t.is(
+    select({
+      type: 'string',
+      properties: ['name', { type: 'number' }],
+    })({ name: '33.3' }),
+    33.3,
+  );
+});
+
+test('data type by object', (t) => {
   t.deepEqual(
     select({
       type: 'object',
       properties: {
-        name: 'name',
-        age: '$age',
+        name: 'quan',
+        age: '$age:integer',
       },
-    })('asdfw'),
+    })({
+      age: '33.3',
+    }),
     {
-      name: 'name',
-      age: null,
+      name: 'quan',
+      age: 33,
     },
   );
   t.deepEqual(
     select({
       type: 'object',
-      properties: {
-        name: 'name',
-        age: '$age',
-      },
+      properties: ['obj', {
+        type: 'object',
+        properties: {
+          name: '$name',
+          age: '$age:integer',
+        },
+      }],
     })({
-      name: 'cqq',
-      age: 33,
-      big: 'foo',
+      age: '44',
+      name: 'quan',
+      obj: {
+        name: 'cqq',
+        age: '30',
+      },
     }),
     {
-      name: 'name',
-      age: 33,
+      name: 'cqq',
+      age: 30,
     },
   );
   t.deepEqual(
     select({
       type: 'object',
-      properties: {
-        name: '$name',
-        age: '$age',
-      },
+      properties: ['obj', {
+        type: 'object',
+        properties: {
+          name: '$name',
+          age: '$age:integer',
+          aa: ['sub', {
+            type: 'object',
+            properties: {
+              name: '$name',
+              age: '$age:integer',
+            },
+          }],
+          foo: ['aa.name', { type: 'string' }],
+          bar: ['bb', { type: 'string', properties: ['cc', { type: 'string' }] }],
+        },
+      }],
     })({
-      name: 'cqq',
-      age: '33',
-      big: 'foo',
+      age: '44',
+      name: 'quan',
+      obj: {
+        name: 'cqq',
+        age: '30',
+        aa: {
+          name: 'aa',
+        },
+        bb: {
+          cc: 'cc',
+        },
+        sub: {
+          name: 'sub',
+          age: '99',
+        },
+      },
     }),
     {
       name: 'cqq',
-      age: '33',
+      age: 30,
+      bar: 'cc',
+      foo: 'aa',
+      aa: {
+        name: 'sub',
+        age: 99,
+      },
     },
   );
   t.deepEqual(
@@ -141,150 +244,67 @@ test('select', (t) => {
   );
 });
 
-test('select convert data value', (t) => {
+test('data type by array', (t) => {
+  t.deepEqual(
+    select({
+      type: 'array',
+      properties: {
+        name: '$name',
+        age: '$age:integer',
+      },
+    })([{ name: 'cqq', age: '22.8' }, { name: 'quan', age: 18.9 }]),
+    [{ name: 'cqq', age: 22 }, { name: 'quan', age: 18 }],
+  );
+  t.deepEqual(
+    select({
+      type: 'array',
+      properties: ['age', { type: 'number' }],
+    })([{ age: '33.3', name: 'cqq' }, { age: 22.1, name: 'quan' }]),
+    [33.3, 22.1],
+  );
+  t.deepEqual(
+    select({
+      type: 'array',
+      properties: ['$', { type: 'number' }],
+    })(['33', '22.8', 55]),
+    [33, 22.8, 55],
+  );
   t.deepEqual(
     select({
       type: 'object',
       properties: {
-        name: 'name',
-        age: '$age:number',
+        name: '$name',
+        arr: ['list', {
+          type: 'array',
+          properties: ['$', { type: 'number' }],
+        }],
       },
     })({
-      age: '33',
+      name: 'quan',
+      list: ['33', '22.8', 55],
     }),
     {
-      name: 'name',
-      age: 33,
+      name: 'quan',
+      arr: [33, 22.8, 55],
     },
   );
   t.deepEqual(
     select({
       type: 'object',
       properties: {
-        name: 'name',
-        big: '$big : integer',
-        age: '$age: number',
-        obj: {
-          good: '$good:boolean',
-        },
+        name: '$name',
+        arr: ['list', {
+          type: 'array',
+          properties: ['age', { type: 'integer' }],
+        }],
       },
     })({
-      age: '33',
-      big: '23.3',
-      good: 'true',
+      name: 'quan',
+      list: [{ age: '33.3', name: 'cqq' }, { age: 22.1, name: 'quan' }],
     }),
     {
-      name: 'name',
-      big: 23,
-      age: 33,
-      obj: {
-        good: true,
-      },
-    },
-  );
-  t.deepEqual(
-    select({
-      type: 'object',
-      properties: {
-        name: ['$name', { type: 'boolean' }],
-        age: ['$age', { type: 'integer' }],
-      },
-    })({
-      name: 'true',
-      age: 22.33,
-    }),
-    {
-      name: true,
-      age: 22,
-    },
-  );
-  t.deepEqual(
-    select({
-      type: 'object',
-      properties: {
-        count: '$count:integer',
-        list: [
-          '$list',
-          {
-            type: 'array',
-            properties: {
-              name: '$name',
-              obj: {
-                name: '$obj.name',
-              },
-            },
-          },
-        ],
-      },
-    })({
-      count: 123,
-      list: [
-        {
-          name: 'cqq',
-          age: 33,
-          obj: {
-            foo: 'cc',
-            name: '1',
-          },
-        },
-        {
-          name: 'big',
-          age: 99,
-          obj: {
-            foo: 'bar',
-            name: '2',
-          },
-        },
-      ],
-    }),
-    {
-      count: 123,
-      list: [
-        {
-          name: 'cqq',
-          obj: {
-            name: '1',
-          },
-        },
-        {
-          name: 'big',
-          obj: {
-            name: '2',
-          },
-        },
-      ],
-    },
-  );
-  t.deepEqual(
-    select({
-      type: 'object',
-      properties: {
-        count: '$count:integer',
-        obj: [
-          '$sub',
-          {
-            type: 'object',
-            properties: {
-              name: '$name',
-              age: '$age:integer',
-            },
-          },
-        ],
-      },
-    })({
-      count: '123.3',
-      sub: {
-        name: 'aaa',
-        age: '33',
-        foo: 'bar',
-      },
-    }),
-    {
-      count: 123,
-      obj: {
-        name: 'aaa',
-        age: 33,
-      },
+      name: 'quan',
+      arr: [33, 22],
     },
   );
 });
