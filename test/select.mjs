@@ -248,6 +248,22 @@ test('data type by array', (t) => {
   t.deepEqual(
     select({
       type: 'array',
+      properties: ['name', { type: 'string' }],
+    })([
+      {
+        age: 22,
+        name: 'quan',
+      },
+      {
+        age: 33,
+        name: 'cqq',
+      },
+    ]),
+    ['quan', 'cqq'],
+  );
+  t.deepEqual(
+    select({
+      type: 'array',
       properties: {
         name: '$name',
         age: '$age:integer',
@@ -306,5 +322,76 @@ test('data type by array', (t) => {
       name: 'quan',
       arr: [33, 22],
     },
+  );
+});
+
+test('with resolve', (t) => {
+  t.is(
+    select({
+      type: 'string',
+      properties: ['name', {
+        type: 'string',
+        resolve: (d) => `cqq_${d}`,
+      }],
+    })({
+      name: 'quan',
+    }),
+    'cqq_quan',
+  );
+  t.is(
+    select({
+      type: 'string',
+      resolve: (d) => `---${d.name}`,
+      properties: ['name', {
+        type: 'string',
+        resolve: (d) => `cqq_${d}`,
+      }],
+    })({
+      name: 'quan',
+    }),
+    'cqq_quan',
+  );
+  t.is(
+    select({
+      type: 'string',
+      resolve: (a) => a.name,
+    })({
+      name: 'quan',
+    }),
+    'quan',
+  );
+  t.deepEqual(
+    select({
+      type: 'object',
+      properties: {
+        name: ['name', {
+          type: 'string',
+          resolve: (d) => `cqq_${d}`,
+        }],
+      },
+    })({
+      age: 22,
+      name: 'quan',
+    }),
+    { name: 'cqq_quan' },
+  );
+  t.deepEqual(
+    select({
+      type: 'array',
+      properties: ['name', {
+        type: 'string',
+        resolve: (d) => `cqq_${d}`,
+      }],
+    })([
+      {
+        age: 22,
+        name: 'quan',
+      },
+      {
+        age: 33,
+        name: 'cqq',
+      },
+    ]),
+    ['cqq_quan', 'cqq_cqq'],
   );
 });

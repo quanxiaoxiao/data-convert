@@ -36,7 +36,6 @@ const validate = ajv.compile({
         },
       },
       required: ['type', 'properties'],
-      additionalProperties: false,
     },
     {
       properties: {
@@ -57,7 +56,6 @@ const validate = ajv.compile({
         },
       },
       required: ['type'],
-      additionalProperties: false,
     },
   ],
 });
@@ -108,7 +106,7 @@ export const selectData = ([dataKey, schema]) => {
   checkDataTypeSupport(schema.type);
   return (data) => {
     const dataValue = dataKey === '$' ? data : getDataValue(data, dataKey);
-    return convertDataValue(dataValue, schema.type);
+    return convertDataValue(schema.resolve ? schema.resolve(dataValue) : dataValue, schema.type);
   };
 };
 
@@ -132,11 +130,9 @@ const parse = (exp) => {
         && ref.length === 2
         && typeof ref[0] === 'string'
         && _.isPlainObject(ref[1])) {
-        const next = select(ref[1]);
-        item.fn = (data) => {
-          const dataValue = getDataValue(data, ref[0]);
-          return next(dataValue);
-        };
+        const schema = ref[1];
+        const next = select(schema);
+        item.fn = (data) => next(getDataValue(data, ref[0]));
       }
       fieldList.push(item);
     }
@@ -159,7 +155,7 @@ function select(schema) {
     if (Array.isArray(schema.properties)) {
       return selectData(schema.properties);
     }
-    return (data) => convertDataValue(data, dataType);
+    return (data) => convertDataValue(schema.resolve ? schema.resolve(data) : data, dataType);
   }
   if (dataType === 'array') {
     if (Array.isArray(schema.properties)) {
