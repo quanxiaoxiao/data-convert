@@ -24,7 +24,7 @@ const map = {
       return '';
     }
     if (typeof v !== 'string') {
-      return JSON.stringify(v);
+      return v.toString ? `${v.toString()}` : JSON.stringify(v);
     }
     return v;
   },

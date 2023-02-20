@@ -28,7 +28,11 @@ test('convertDataValue string', (t) => {
   t.is(convertDataValue(true, DATA_TYPE_STRING), 'true');
   t.is(convertDataValue(false, DATA_TYPE_STRING), 'false');
   t.is(convertDataValue(' 1', DATA_TYPE_STRING), ' 1');
-  t.is(convertDataValue({ name: 'cqq' }, DATA_TYPE_STRING), JSON.stringify({ name: 'cqq' }));
+  t.is(convertDataValue({ name: 'cqq' }, DATA_TYPE_STRING), '[object Object]');
+  t.is(convertDataValue({
+    name: 'quan',
+    toString: () => 'cqq',
+  }, DATA_TYPE_STRING), 'cqq');
 });
 
 test('convertDataValue integer', (t) => {
