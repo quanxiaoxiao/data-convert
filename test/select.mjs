@@ -274,6 +274,15 @@ test('data type by array', (t) => {
   t.deepEqual(
     select({
       type: 'array',
+      properties: {
+        name: '$name',
+      },
+    })([{ name: 'cqq', age: '22.8' }, { name: 'quan', age: 18.9 }]),
+    [{ name: 'cqq' }, { name: 'quan' }],
+  );
+  t.deepEqual(
+    select({
+      type: 'array',
       properties: ['age', { type: 'number' }],
     })([{ age: '33.3', name: 'cqq' }, { age: 22.1, name: 'quan' }]),
     [33.3, 22.1],
