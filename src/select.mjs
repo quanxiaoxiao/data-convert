@@ -162,10 +162,11 @@ function select(schema) {
       const convert = select(schema.properties[1]);
       const dataKey = schema.properties[0];
       return (data) => {
-        if (!Array.isArray(data)) {
+        const arr = getDataValue(data, dataKey);
+        if (!Array.isArray(arr)) {
           return [];
         }
-        return data.map((d) => convert(getDataValue(d, dataKey)));
+        return arr.map((d) => convert(d));
       };
     }
     const convert = parse(schema.properties);

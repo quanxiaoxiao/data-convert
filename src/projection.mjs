@@ -10,6 +10,7 @@ const keywords = [
   '$group',
   '$find',
   '$join',
+  '$project',
   '$limit',
   // '$reduce',
   // '$count',
@@ -49,7 +50,7 @@ const handler = {
   */
   $map: {
     schema: {
-      type: ['object', 'string'],
+      type: ['object', 'string', 'array'],
     },
     fn: (express) => {
       if (typeof express === 'string') {
@@ -73,24 +74,20 @@ const handler = {
           return arr.map((d) => padValue(d));
         };
       }
-      const handleAtObject = select({
-        type: 'object',
-        properties: express,
-      });
-      const handleAtArray = select({
+      return select({
         type: 'array',
         properties: express,
       });
-      return (v) => {
-        if (v == null) {
-          return null;
-        }
-        if (Array.isArray(v)) {
-          return handleAtArray(v);
-        }
-        return handleAtObject(v);
-      };
     },
+  },
+  $project: {
+    schema: {
+      type: ['object', 'array'],
+    },
+    fn: (express) => select({
+      type: 'object',
+      properties: express,
+    }),
   },
   $get: {
     schema: {

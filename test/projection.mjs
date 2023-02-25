@@ -25,7 +25,7 @@ test('projection', (t) => {
   t.deepEqual(projection([])([{ name: 'cqq' }]), [{ name: 'cqq' }]);
 });
 
-test('projection get', (t) => {
+test('$get', (t) => {
   t.throws(() => {
     projection([
       {
@@ -57,10 +57,31 @@ test('projection get', (t) => {
     ])({ data: { name: 'cqq' } }),
     'cqq',
   );
+  t.is(
+    projection([
+      {
+        $project: ['data.name', { type: 'string' }],
+      },
+    ])({ data: { name: 'cqq' } }),
+    'cqq',
+  );
   t.deepEqual(
     projection([
       {
         $get: 'data.list',
+      },
+    ])({ data: { list: [{ name: 'cqq' }] } }),
+    [{ name: 'cqq' }],
+  );
+  t.deepEqual(
+    projection([
+      {
+        $project: ['data.list', {
+          type: 'array',
+          properties: {
+            name: '$name:string',
+          },
+        }],
       },
     ])({ data: { list: [{ name: 'cqq' }] } }),
     [{ name: 'cqq' }],
@@ -73,13 +94,21 @@ test('projection get', (t) => {
     ])({ endDate: 333 }),
     333,
   );
+  t.is(
+    projection([
+      {
+        $project: ['endDate', { type: 'integer' }],
+      },
+    ])({ endDate: 333 }),
+    333,
+  );
 });
 
-test('projection map', (t) => {
+test('$project', (t) => {
   t.deepEqual(
     projection([
       {
-        $map: {
+        $project: {
           name: 1,
         },
       },
@@ -89,17 +118,25 @@ test('projection map', (t) => {
   t.deepEqual(
     projection([
       {
-        $map: {
+        $project: {
           name: '$name',
         },
       },
     ])({ cqq: 'xxx' }),
     { name: null },
   );
+  t.is(
+    projection([
+      {
+        $project: ['cqq', { type: 'string' }],
+      },
+    ])({ cqq: 'xxx' }),
+    'xxx',
+  );
   t.deepEqual(
     projection([
       {
-        $map: {
+        $project: {
           test: true,
           big: '$cqq',
         },
@@ -110,7 +147,7 @@ test('projection map', (t) => {
   t.deepEqual(
     projection([
       {
-        $map: {
+        $project: {
           test: '$',
         },
       },
@@ -120,7 +157,7 @@ test('projection map', (t) => {
   t.deepEqual(
     projection([
       {
-        $map: {
+        $project: {
           test: '$',
         },
       },
@@ -130,7 +167,7 @@ test('projection map', (t) => {
   t.deepEqual(
     projection([
       {
-        $map: {
+        $project: {
           test: true,
         },
       },
@@ -140,7 +177,7 @@ test('projection map', (t) => {
   t.deepEqual(
     projection([
       {
-        $map: {
+        $project: {
           name: 1,
           age: 1,
         },
@@ -148,6 +185,43 @@ test('projection map', (t) => {
     ])({ name: 'cqq', age: 30, big: 'foo' }),
     { name: 1, age: 1 },
   );
+  t.deepEqual(
+    projection([
+      {
+        $project: {
+          name: 'xxx',
+        },
+      },
+    ])({}),
+    { name: 'xxx' },
+  );
+  t.deepEqual(
+    projection([
+      {
+        $project: ['obj.list', {
+          type: 'array',
+          properties: {
+            name: '$name:string',
+          },
+        }],
+      },
+    ])({
+      obj: {
+        list: [
+          {
+            name: 'cqq',
+          },
+          {
+            name: 'quan',
+          },
+        ],
+      },
+    }),
+    [{ name: 'cqq' }, { name: 'quan' }],
+  );
+});
+
+test('$map', (t) => {
   const data = [
     {
       name: 'cqq',
@@ -190,20 +264,18 @@ test('projection map', (t) => {
   t.deepEqual(
     projection([
       {
-        $map: {
-          name: 'xxx',
-        },
-      },
-    ])({}),
-    { name: 'xxx' },
-  );
-  t.deepEqual(
-    projection([
-      {
         $map: 'cqq',
       },
     ])(['11', '22']),
     ['cqq', 'cqq'],
+  );
+  t.deepEqual(
+    projection([
+      {
+        $map: ['$', { type: 'integer' }],
+      },
+    ])(['11', '22']),
+    [11, 22],
   );
   t.deepEqual(
     projection([
@@ -220,16 +292,6 @@ test('projection map', (t) => {
       },
     ])([{ name: 'aa', age: 33 }, { name: 'bb', age: 34 }]),
     ['aa-33-', 'bb-34-'],
-  );
-  t.deepEqual(
-    projection([
-      {
-        $map: {
-          name: 'xxx',
-        },
-      },
-    ])('asd'),
-    { name: 'xxx' },
   );
   t.deepEqual(
     projection([
@@ -261,6 +323,18 @@ test('projection map', (t) => {
       {
         $map: {
           name: '$name',
+        },
+      },
+    ])(data),
+    [
+      { name: 'cqq' },
+    ],
+  );
+  t.deepEqual(
+    projection([
+      {
+        $map: {
+          name: '$name:string',
         },
       },
     ])(data),
@@ -321,6 +395,19 @@ test('projection map', (t) => {
     projection([
       {
         $map: {
+          name: 1,
+          age: '$age:integer',
+        },
+      },
+    ])(data),
+    [
+      { name: 1, age: 30 },
+    ],
+  );
+  t.deepEqual(
+    projection([
+      {
+        $map: {
           empty: null,
         },
       },
@@ -365,7 +452,7 @@ test('projection map', (t) => {
         $map: {
           name: '$name',
           sub: {
-            name: '$obj.name',
+            name: '$obj.name:string',
             age: '$age',
           },
         },
