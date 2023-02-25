@@ -264,7 +264,6 @@ test('data type by array', (t) => {
     ]),
     ['quan', 'cqq'],
   );
-  /*
   t.deepEqual(
     select({
       type: 'array',
@@ -281,7 +280,6 @@ test('data type by array', (t) => {
     ]),
     ['quan', 'cqq'],
   );
-  */
   t.deepEqual(
     select({
       type: 'array',
@@ -317,6 +315,16 @@ test('data type by array', (t) => {
           type: 'number',
         }],
       }],
+    })([{ age: '33.3', name: 'cqq' }, { age: 22.1, name: 'quan' }]),
+    [33.3, 22.1],
+  );
+  t.deepEqual(
+    select({
+      type: 'array',
+      properties: ['$', ['age', {
+        type: 'number',
+      }],
+      ],
     })([{ age: '33.3', name: 'cqq' }, { age: 22.1, name: 'quan' }]),
     [33.3, 22.1],
   );
@@ -372,6 +380,28 @@ test('data type by array', (t) => {
               type: 'integer',
               properties: ['age', { type: 'integer' }],
             },
+          ],
+        }],
+      },
+    })({
+      name: 'quan',
+      list: [{ age: '33.3', name: 'cqq' }, { age: 22.1, name: 'quan' }],
+    }),
+    {
+      name: 'quan',
+      arr: [33, 22],
+    },
+  );
+  t.deepEqual(
+    select({
+      type: 'object',
+      properties: {
+        name: '$name',
+        arr: ['list', {
+          type: 'array',
+          properties: [
+            '$',
+            ['age', { type: 'integer' }],
           ],
         }],
       },

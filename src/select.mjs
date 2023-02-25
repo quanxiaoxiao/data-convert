@@ -24,7 +24,7 @@ const validate = ajv.compile({
                   type: 'string',
                 },
                 {
-                  type: 'object',
+                  type: ['object', 'array'],
                 },
               ],
               additionalItems: false,
@@ -49,7 +49,7 @@ const validate = ajv.compile({
               type: 'string',
             },
             {
-              type: 'object',
+              type: ['object', 'array'],
             },
           ],
           additionalItems: false,
