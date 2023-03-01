@@ -1106,4 +1106,17 @@ test('projection pipeline', (t) => {
     ])(data),
     data.map((d) => `--color-${d.name}:${d.value};`).join(' '),
   );
+  t.is(
+    projection([
+      {
+        $project: {
+          value: 'cqq',
+        },
+      },
+      {
+        $project: ['value', { type: 'string' }],
+      },
+    ])(),
+    'cqq',
+  );
 });
