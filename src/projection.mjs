@@ -12,6 +12,7 @@ const keywords = [
   '$join',
   '$project',
   '$limit',
+  // '$uniq',
   // '$reduce',
   // '$count',
   // '$sort',

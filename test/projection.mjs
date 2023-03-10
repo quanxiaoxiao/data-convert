@@ -1087,10 +1087,12 @@ test('projection $join', (t) => {
 test('projection pipeline', (t) => {
   const data = [
     {
+      _id: '1',
       name: 'aaa',
       value: '#f00',
     },
     {
+      _id: '2',
       name: 'bbb',
       value: '#ff0',
     },
@@ -1118,5 +1120,31 @@ test('projection pipeline', (t) => {
       },
     ])(),
     'cqq',
+  );
+  t.is(
+    projection([
+      {
+        $filter: {
+          _id: '2',
+        },
+      },
+      {
+        $get: '0.name',
+      },
+    ])(data),
+    'bbb',
+  );
+  t.is(
+    projection([
+      {
+        $filter: {
+          _id: '3',
+        },
+      },
+      {
+        $get: '0.name',
+      },
+    ])(data),
+    null,
   );
 });
