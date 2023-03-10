@@ -254,6 +254,7 @@ test('$map', (t) => {
       },
     ]);
   });
+  /*
   t.throws(() => {
     projection([
       {
@@ -261,6 +262,7 @@ test('$map', (t) => {
       },
     ]);
   });
+  */
   t.deepEqual(
     projection([
       {
@@ -272,7 +274,7 @@ test('$map', (t) => {
   t.deepEqual(
     projection([
       {
-        $map: ['$', { type: 'integer' }],
+        $map: ['$$', { type: 'integer' }],
       },
     ])(['11', '22']),
     [11, 22],

@@ -129,7 +129,7 @@ const parse = (exp) => {
       } else if (Array.isArray(ref)
         && ref.length === 2
         && typeof ref[0] === 'string'
-        && _.isPlainObject(ref[1])) {
+        && (_.isPlainObject(ref[1]) || Array.isArray(ref[1]))) {
         const schema = ref[1];
         const next = select(schema);
         item.fn = (data) => next(getDataValue(data, ref[0]));
@@ -144,6 +144,14 @@ const parse = (exp) => {
 
 function select(schema) {
   if (Array.isArray(schema)) {
+    if (Array.isArray(schema[1])) {
+      const convert = select(schema[1]);
+      const dataKey = schema[0];
+      return (d) => {
+        const v = getDataValue(d, dataKey);
+        return convert(v);
+      };
+    }
     return selectData(schema);
   }
   if (!validate(schema)) {
@@ -159,14 +167,39 @@ function select(schema) {
   }
   if (dataType === 'array') {
     if (Array.isArray(schema.properties)) {
-      const convert = select(schema.properties[1]);
       const dataKey = schema.properties[0];
+      if (/^\$\$/.test(dataKey)) {
+        const convert = select(schema.properties[1]);
+        return (data) => {
+          if (!Array.isArray(data)) {
+            return [];
+          }
+          return data.map((d) => convert(getDataValue(d, dataKey.slice(2))));
+        };
+      }
+      if (Array.isArray(schema.properties[1])) {
+        const convert = select({
+          type: 'array',
+          properties: schema.properties[1],
+        });
+        return (data) => {
+          const arr = getDataValue(data, dataKey);
+          if (!Array.isArray(arr)) {
+            return [];
+          }
+          return convert(arr);
+        };
+      }
+      const convert = select({
+        properties: schema.properties[1].properties,
+        type: 'array',
+      });
       return (data) => {
         const arr = getDataValue(data, dataKey);
         if (!Array.isArray(arr)) {
           return [];
         }
-        return arr.map((d) => convert(d));
+        return convert(arr);
       };
     }
     const convert = parse(schema.properties);
