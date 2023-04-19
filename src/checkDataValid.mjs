@@ -10,80 +10,6 @@ const DATA_TYPE_ARRAY = 'array';
 const DATA_TYPE_OBJECT = 'object';
 const DATA_TYPE_INTEGER = 'integer';
 
-const convertFieldListToDataSchema = (fieldList) => {
-  const map = {
-    [DATA_TYPE_NUMBER]: (fieldItem) => ({
-      type: 'number',
-      nullable: !fieldItem.required,
-    }),
-    [DATA_TYPE_INTEGER]: (fieldItem) => ({
-      type: 'integer',
-      nullable: !fieldItem.required,
-    }),
-    [DATA_TYPE_STRING]: (fieldItem) => ({
-      type: 'string',
-      nullable: !fieldItem.required,
-      ...fieldItem.required ? {
-        minLength: 1,
-      } : {},
-    }),
-    [DATA_TYPE_BOOLEAN]: (fieldItem) => ({
-      type: 'boolean',
-      nullable: !fieldItem.required,
-    }),
-    [DATA_TYPE_JSON]: () => ({
-      type: ['array', 'object', 'null', 'string', 'number', 'boolean'],
-    }),
-    [DATA_TYPE_ARRAY]: (fieldItem) => ({
-      type: 'array',
-      ...fieldItem.required ? {
-        minItems: 1,
-      } : {},
-    }),
-    [DATA_TYPE_OBJECT]: (fieldItem) => ({
-      type: 'object',
-      nullable: !fieldItem.required,
-    }),
-  };
-  const schema = fieldList.reduce((acc, fieldItem) => {
-    const projection = map[fieldItem.type];
-    if (!projection) {
-      return acc;
-    }
-    if (!_.isEmpty(fieldItem.list)) {
-      if (fieldItem.type === 'object') {
-        return {
-          ...acc,
-          [fieldItem.name]: convertFieldListToDataSchema(fieldItem.list),
-        };
-      }
-      if (fieldItem.type === 'array') {
-        return {
-          ...acc,
-          [fieldItem.name]: {
-            type: 'array',
-            items: convertFieldListToDataSchema(fieldItem.list),
-            ...fieldItem.required ? {
-              minItems: 1,
-            } : {},
-          },
-        };
-      }
-    }
-    return {
-      ...acc,
-      [fieldItem.name]: projection(fieldItem),
-    };
-  }, {});
-  return {
-    type: 'object',
-    properties: schema,
-    required: fieldList
-      .filter((d) => map[d.type] && d.required)
-      .map((d) => d.name),
-  };
-};
-
 const validateField = (new Ajv({ strict: false })).compile({
   type: 'object',
   properties: {
@@ -124,79 +50,140 @@ const validateField = (new Ajv({ strict: false })).compile({
   required: ['name', 'type'],
 });
 
-const getValidateList = (arr, path = []) => {
+const generateFieldValidate = (fieldList) => {
   const result = [];
-  for (let i = 0; i < arr.length; i++) {
-    const item = arr[i];
-    if (item.schema) {
-      try {
-        result.push({
-          path,
-          validate: (new Ajv({
-            strict: false,
-          }))
-            .compile(item.schema),
-        });
-      } catch (error) {
-        console.warn(`\`${JSON.stringify(item.schema)}\` [${item.name}] parse schema fail, ${error.message}`);
-      }
-    }
-    if (!_.isEmpty(item.list)) {
-      result.push(...getValidateList(item.list, [...path, item.name]));
-    }
-  }
-  return result;
-};
-
-const generateValidate = (list) => {
-  const fieldList = [];
-  for (let i = 0; i < list.length; i++) {
-    const fieldItem = list[i];
+  const map = {
+    [DATA_TYPE_NUMBER]: () => ({
+      type: 'number',
+    }),
+    [DATA_TYPE_INTEGER]: (fieldItem) => ({
+      type: 'number',
+      match: (v) => {
+        if (!Number.isInteger(v)) {
+          return `\`${fieldItem.name}\` dataValue \`${JSON.stringify(v)}\` invalid`;
+        }
+        return null;
+      },
+    }),
+    [DATA_TYPE_STRING]: (fieldItem) => ({
+      type: 'string',
+      match: (v) => {
+        if (fieldItem.required) {
+          if (v === '') {
+            return `\`${fieldItem.name}\` dataValue is empty`;
+          }
+          if (fieldItem.trim && v.trim() === '') {
+            return `\`${fieldItem.name}\` dataValue is empty`;
+          }
+        }
+        return null;
+      },
+    }),
+    [DATA_TYPE_BOOLEAN]: () => ({
+      type: 'boolean',
+    }),
+    [DATA_TYPE_JSON]: () => ({
+      type: ['object', 'string', 'number', 'boolean'],
+    }),
+    [DATA_TYPE_ARRAY]: (fieldItem) => ({
+      type: 'object',
+      match: (v) => {
+        if (!Array.isArray(v)) {
+          return `\`${fieldItem.name}\` data invalid`;
+        }
+        if (fieldItem.required && v.length === 0) {
+          return `\`${fieldItem.name}\` dataValue is empty`;
+        }
+        return null;
+      },
+    }),
+    [DATA_TYPE_OBJECT]: (fieldItem) => ({
+      type: 'object',
+      match: (v) => {
+        if (!_.isPlainObject(v)) {
+          return `\`${fieldItem.name}\` dataValue \`${JSON.stringify(v)}\` invalid`;
+        }
+        return null;
+      },
+    }),
+  };
+  for (let i = 0; i < fieldList.length; i++) {
+    const fieldItem = fieldList[i];
     if (!validateField(fieldItem)) {
       throw new Error(`field \`${JSON.stringify(fieldItem)}\` invalid ${JSON.stringify(validateField.errors)}`);
     }
     if (!fieldItem.schema) {
-      fieldList.push({
-        type: fieldItem.type,
-        name: fieldItem.name,
-        message: fieldItem.message || null,
-        required: !!fieldItem.required,
-        list: fieldItem.list,
+      const handler = map[fieldItem.type](fieldItem);
+      const next = !_.isEmpty(fieldItem.list) ? generateFieldValidate(fieldItem.list) : null;
+      result.push((data) => {
+        const v = data[fieldItem.name];
+        if (v == null) {
+          if (fieldItem.required) {
+            return `\`${fieldItem.name}\` dataValue is empty`;
+          }
+          return null;
+        }
+        const dataType = typeof v;
+        if (Array.isArray(handler.type)) {
+          if (!handler.type.include(dataType)) {
+            return `\`${fieldItem.name}\` dataType \`${JSON.stringify(v)}\` invalid`;
+          }
+        } else if (handler.type !== dataType) {
+          return `\`${fieldItem.name}\` dataType \`${JSON.stringify(v)}\` invalid`;
+        }
+        if (handler.match) {
+          const ret = handler.match(v);
+          if (ret) {
+            return ret;
+          }
+        }
+        if (next) {
+          if (fieldItem.type === 'array') {
+            return v.find((d) => next.some((validate) => validate(d)));
+          }
+          if (v != null) {
+            return next.some((validate) => validate(v));
+          }
+        }
+        return null;
       });
+    } else {
+      try {
+        const validate = new Ajv({
+          strict: false,
+        }).compile(fieldItem.schema);
+
+        result.push((data) => {
+          if (!validate(data)) {
+            if (fieldItem.message) {
+              return fieldItem.message;
+            }
+            return JSON.stringify(validate.errors);
+          }
+          return null;
+        });
+      } catch (error) {
+        throw new Error(`\`${fieldItem}\` parse schema fail, \`${JSON.stringify(fieldItem.schema)}\``);
+      }
     }
   }
-  const validate = (new Ajv({
-    strict: false,
-  }))
-    .compile(convertFieldListToDataSchema(fieldList));
-  return validate;
+  return result;
 };
 
 const checkDataValid = (list) => {
   if (_.isEmpty(list)) {
     return () => {};
   }
-  const validate = generateValidate(list);
-  const validateList = getValidateList(list, []);
+  const validateList = generateFieldValidate(list);
   return (data) => {
     if (!_.isPlainObject(data)) {
       return 'data invalid';
     }
-    if (!validate(data)) {
-      return JSON.stringify(validate.errors);
-    }
     for (let i = 0; i < validateList.length; i++) {
-      const validateItem = validateList[i];
-      const dataValue = _.isEmpty(validateItem.path)
-        ? data
-        : validateItem.path.reduce((acc, dataKey) => {
-          if (acc == null || !Object.hasOwnProperty.call(acc, dataKey)) {
-            return null;
-          }
-          return acc[dataKey];
-        }, data);
-      if (!validateItem.validate(dataValue)) {
-        return JSON.stringify(validateItem.validate.errors);
+      const validate = validateList[i];
+      const ret = validate(data);
+      if (ret) {
+        return ret;
       }
     }
   };

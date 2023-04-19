@@ -19,14 +19,39 @@ test('checkDataValid', (t) => {
       required: true,
     },
   ]);
-  t.true(!!validate({ name: '' }));
+  validate = checkDataValid([
+    {
+      name: 'name',
+      type: 'string',
+      message: '123',
+      schema: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'integer',
+          },
+        },
+      },
+    },
+  ]);
+  t.is(validate({ name: 'aaaaaaa' }), '123');
+  t.true(validate({ name: 111 }) == null);
   validate = checkDataValid([
     {
       name: 'name',
       type: 'string',
     },
   ]);
-  t.true(!validate({ name: '' }));
+  t.true(validate({ name: '' }) == null);
+  validate = checkDataValid([
+    {
+      name: 'name',
+      type: 'string',
+      required: false,
+    },
+  ]);
+  t.true(validate({ name: '' }) == null);
+  t.true(validate({ name: 123 }) != null);
   validate = checkDataValid([
     {
       name: 'array',
@@ -501,19 +526,77 @@ test('checkDataValid schema', (t) => {
       age: 33,
     },
   }));
-  t.true(!!validate({
+  t.true(validate({
     name: 'cqq',
     obj: {
       name: 'quan',
       age: 33,
     },
-  }));
-  t.true(!!validate({
+  }) == null);
+  t.true(validate({
     name: 'cqq',
     obj: {
       big: 44,
       name: 'quan',
       age: 33,
     },
-  }));
+  }) == null);
+  validate = checkDataValid([
+    {
+      name: 'name',
+      type: 'string',
+      required: true,
+    },
+    {
+      name: 'obj',
+      type: 'object',
+      required: true,
+      list: [
+        {
+          name: 'name',
+          type: 'string',
+          required: true,
+          schema: {
+            type: 'object',
+            properties: {
+              big: {
+                type: 'string',
+              },
+            },
+            required: ['big'],
+          },
+        },
+        {
+          name: 'age',
+          type: 'number',
+          required: true,
+        },
+      ],
+    },
+  ]);
+  t.true(validate({
+    name: 'cqq',
+    obj: {
+      big: 'xxx',
+      name: 'quan',
+      age: 33,
+    },
+  }) == null);
+  t.true(validate({
+    name: 'cqq',
+    obj: {
+      big: 'xxx',
+      age: 33,
+    },
+  }) == null);
+  t.true(validate({
+    name: 'cqq',
+    obj: {
+      name: 'aaa',
+      age: 33,
+    },
+  }) != null);
+  t.true(validate({
+    name: 'cqq',
+  }) != null);
 });
