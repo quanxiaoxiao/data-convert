@@ -10,10 +10,10 @@ const DATA_TYPE_ARRAY = 'array';
 const DATA_TYPE_OBJECT = 'object';
 const DATA_TYPE_INTEGER = 'integer';
 
-const DATA_EMPTY = 0;
-const DATA_TYPE_INVALID = 1;
-const DATA_VALUE_EMPTY = 2;
-const DATA_VALUE_INVALID = 3;
+export const DATA_EMPTY = 0;
+export const DATA_TYPE_INVALID = 1;
+export const DATA_VALUE_EMPTY = 2;
+export const DATA_VALUE_INVALID = 3;
 
 const validateField = (new Ajv({ strict: false })).compile({
   type: 'object',
