@@ -45,6 +45,40 @@ test('checkDataValid', (t) => {
   t.true(!validate({ array: ['1'] }));
 });
 
+test('checkDataValid schema2', (t) => {
+  const validate = checkDataValid([
+    {
+      name: 'name',
+      type: 'string',
+      required: true,
+    },
+    {
+      name: 'dataType',
+      type: 'string',
+      required: true,
+      schema: {
+        type: 'object',
+        properties: {
+          dataType: {
+            enum: [
+              'string',
+              'number',
+              'object',
+              'integer',
+              'array',
+              'json',
+              'boolean',
+            ],
+          },
+        },
+        required: ['dataType'],
+      },
+    },
+  ]);
+  t.true(!validate({ name: 'cqq', dataType: 'string' }));
+  t.true(!!validate({ name: 'cqq', dataType: 'strings' }));
+});
+
 test('checkDataValid individual', (t) => {
   const fieldList = [
     {
