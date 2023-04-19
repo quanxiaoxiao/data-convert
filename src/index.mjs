@@ -1,5 +1,10 @@
 import convertDataValue from './convertDataValue.mjs';
-import checkDataValid from './checkDataValid.mjs';
+import checkDataValid, {
+  DATA_EMPTY,
+  DATA_TYPE_INVALID,
+  DATA_VALUE_EMPTY,
+  DATA_VALUE_INVALID,
+} from './checkDataValid.mjs';
 import convertData from './convertData.mjs';
 import projection from './projection.mjs';
 import checkoutDataValue from './checkoutDataValue.mjs';
@@ -15,4 +20,8 @@ export {
   projection,
   merge,
   checkoutDataValue,
+  DATA_EMPTY,
+  DATA_TYPE_INVALID,
+  DATA_VALUE_EMPTY,
+  DATA_VALUE_INVALID,
 };
