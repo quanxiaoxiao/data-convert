@@ -184,7 +184,7 @@ const generateFieldValidate = (fieldList, parentName) => {
           for (let j = 0; j < v.length; j++) {
             const invalid = checkDataValueValid(next, v[j]);
             if (invalid) {
-              return invalid;
+              return [invalid[0], ...invalid.slice(1)];
             }
           }
         }
