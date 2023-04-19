@@ -84,10 +84,10 @@ const check = (fieldItem, data) => {
       match: (v) => {
         if (d.required) {
           if (v === '') {
-            return [fieldItem.name, DATA_VALUE_EMPTY, null];
+            return [d.name, DATA_VALUE_EMPTY, null];
           }
           if (fieldItem.trim && v.trim() === '') {
-            return [fieldItem.name, DATA_VALUE_EMPTY, null];
+            return [d.name, DATA_VALUE_EMPTY, null];
           }
         }
         return null;
@@ -116,6 +116,9 @@ const check = (fieldItem, data) => {
       match: (v) => {
         if (!_.isPlainObject(v)) {
           return [d.name, DATA_TYPE_INVALID, null];
+        }
+        if (d.required && _.isEmpty(v)) {
+          return [d.name, DATA_VALUE_EMPTY, null];
         }
         return null;
       },
