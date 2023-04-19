@@ -184,7 +184,7 @@ const generateFieldValidate = (fieldList, parentName) => {
           for (let j = 0; j < v.length; j++) {
             const invalid = checkDataValueValid(next, v[j]);
             if (invalid) {
-              return [invalid[0], ...invalid.slice(1)];
+              return [invalid[0].replace(new RegExp(`${fieldItem.name}\\.([^.]+)$`), (a, b) => `${fieldItem.name}.${j}.${b}`), ...invalid.slice(1)];
             }
           }
         }
@@ -220,7 +220,7 @@ const checkDataValid = (list) => {
   const validateList = generateFieldValidate(list);
   return (data) => {
     if (!_.isPlainObject(data)) {
-      return [null, DATA_EMPTY, 'data invalid'];
+      return ['', DATA_EMPTY, 'data invalid'];
     }
     return checkDataValueValid(validateList, data);
   };

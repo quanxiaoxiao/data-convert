@@ -1,26 +1,6 @@
 import test from 'ava'; // eslint-disable-line
 import checkDataValid from '../src/checkDataValid.mjs';
 
-/*
-test('zzz', (t) => {
-  const validate = checkDataValid([
-    {
-      name: 'obj',
-      type: 'object',
-      required: true,
-      list: [
-        {
-          name: 'foo',
-          type: 'string',
-          required: true,
-        },
-      ],
-    },
-  ]);
-  t.is(validate({ name: 'aaa', obj: { foo: 222 } })[0], 'obj.foo');
-});
-*/
-
 test('checkDataValid', (t) => {
   let validate = checkDataValid([]);
   t.true(validate({}) == null);
@@ -334,7 +314,7 @@ test('checkDataValid sub', (t) => {
       ],
     },
   }) == null);
-  t.true(validate({
+  t.is(validate({
     name: 'aaa',
     list: [],
     obj: {
@@ -345,7 +325,7 @@ test('checkDataValid sub', (t) => {
         },
       ],
     },
-  }) != null);
+  })[0], 'list');
   t.true(!!validate({
     name: 'aaa',
     list: [
@@ -392,6 +372,61 @@ test('checkDataValid sub', (t) => {
       ],
     },
   }));
+});
+
+test('checkDataValid array', (t) => {
+  const validate = checkDataValid([
+    {
+      name: 'bar',
+      type: 'string',
+      required: true,
+    },
+    {
+      name: 'list',
+      type: 'array',
+      required: true,
+      list: [
+        {
+          name: 'name',
+          type: 'string',
+          required: true,
+        },
+        {
+          name: 'age',
+          type: 'integer',
+        },
+      ],
+    },
+  ]);
+  t.true(validate({
+    bar: 'aaa',
+    list: [{ name: 'xxx' }],
+  }) == null);
+  t.is(validate({
+    bar: 'aaa',
+    list: [],
+  })[0], 'list');
+  t.is(validate({
+    bar: 'aaa',
+    list: [
+      {
+        name: 'aaa',
+        age: '33',
+      },
+    ],
+  })[0], 'list.0.age');
+  t.is(validate({
+    bar: 'aaa',
+    list: [
+      {
+        name: 'aaa',
+        age: 33,
+      },
+      {
+        age: 22,
+      },
+    ],
+  })[0], 'list.1.name');
 });
 
 test('checkDataValid schema', (t) => {
