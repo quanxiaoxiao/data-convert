@@ -1,6 +1,26 @@
 import test from 'ava'; // eslint-disable-line
 import checkDataValid from '../src/checkDataValid.mjs';
 
+/*
+test('zzz', (t) => {
+  const validate = checkDataValid([
+    {
+      name: 'obj',
+      type: 'object',
+      required: true,
+      list: [
+        {
+          name: 'foo',
+          type: 'string',
+          required: true,
+        },
+      ],
+    },
+  ]);
+  t.is(validate({ name: 'aaa', obj: { foo: 222 } })[0], 'obj.foo');
+});
+*/
+
 test('checkDataValid', (t) => {
   let validate = checkDataValid([]);
   t.true(validate({}) == null);
@@ -57,7 +77,7 @@ test('checkDataValid', (t) => {
   ]);
   t.true(validate({ name: 'aaa', obj: {} }) != null);
   t.true(validate({ name: 'aaa', obj: { foo: 'aaa' } }) == null);
-  t.is(validate({ name: 'aaa', obj: { foo: 222 } })[0], 'foo');
+  t.is(validate({ name: 'aaa', obj: { foo: 222 } })[0], 'obj.foo');
   validate = checkDataValid([
     {
       name: 'name',

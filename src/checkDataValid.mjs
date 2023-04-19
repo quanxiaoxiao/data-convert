@@ -70,11 +70,11 @@ const check = (fieldItem, data) => {
     [DATA_TYPE_NUMBER]: () => ({
       type: 'number',
     }),
-    [DATA_TYPE_INTEGER]: (d) => ({
+    [DATA_TYPE_INTEGER]: () => ({
       type: 'number',
       match: (v) => {
         if (!Number.isInteger(v)) {
-          return [d.name, DATA_TYPE_INVALID, null];
+          return [DATA_TYPE_INVALID, null];
         }
         return null;
       },
@@ -84,10 +84,10 @@ const check = (fieldItem, data) => {
       match: (v) => {
         if (d.required) {
           if (v === '') {
-            return [d.name, DATA_VALUE_EMPTY, null];
+            return [DATA_VALUE_EMPTY, null];
           }
-          if (fieldItem.trim && v.trim() === '') {
-            return [d.name, DATA_VALUE_EMPTY, null];
+          if (d.trim && v.trim() === '') {
+            return [DATA_VALUE_EMPTY, null];
           }
         }
         return null;
@@ -103,10 +103,10 @@ const check = (fieldItem, data) => {
       type: 'object',
       match: (v) => {
         if (!Array.isArray(v)) {
-          return [d.name, DATA_TYPE_INVALID, null];
+          return [DATA_TYPE_INVALID, null];
         }
         if (d.required && v.length === 0) {
-          return [d.name, DATA_VALUE_EMPTY, null];
+          return [DATA_VALUE_EMPTY, null];
         }
         return null;
       },
@@ -115,10 +115,10 @@ const check = (fieldItem, data) => {
       type: 'object',
       match: (v) => {
         if (!_.isPlainObject(v)) {
-          return [d.name, DATA_TYPE_INVALID, null];
+          return [DATA_TYPE_INVALID, null];
         }
         if (d.required && _.isEmpty(v)) {
-          return [d.name, DATA_VALUE_EMPTY, null];
+          return [DATA_VALUE_EMPTY, null];
         }
         return null;
       },
@@ -127,10 +127,10 @@ const check = (fieldItem, data) => {
   const v = data[fieldItem.name];
   if (v == null) {
     if (fieldItem.required) {
-      return [fieldItem.name, DATA_VALUE_EMPTY, null];
+      return [DATA_VALUE_EMPTY, null];
     }
     if (fieldItem.type === 'array') {
-      return [fieldItem.name, DATA_VALUE_INVALID, null];
+      return [DATA_VALUE_INVALID, null];
     }
     return null;
   }
@@ -138,10 +138,10 @@ const check = (fieldItem, data) => {
   const handler = map[fieldItem.type](fieldItem);
   if (Array.isArray(handler.type)) {
     if (!handler.type.include(dataType)) {
-      return [fieldItem.name, DATA_TYPE_INVALID, null];
+      return [DATA_TYPE_INVALID, null];
     }
   } else if (handler.type !== dataType) {
-    return [fieldItem.name, DATA_TYPE_INVALID, null];
+    return [DATA_TYPE_INVALID, null];
   }
   if (handler.match) {
     const ret = handler.match(v);
@@ -152,27 +152,33 @@ const check = (fieldItem, data) => {
   return null;
 };
 
-const generateFieldValidate = (fieldList) => {
+const generateFieldValidate = (fieldList, parentName) => {
   const result = [];
   for (let i = 0; i < fieldList.length; i++) {
     const fieldItem = fieldList[i];
     if (!validateField(fieldItem)) {
       throw new Error(`field \`${JSON.stringify(fieldItem)}\` invalid ${JSON.stringify(validateField.errors)}`);
     }
+    const pathName = parentName ? `${parentName}.${fieldItem.name}` : fieldItem.name;
     if (!fieldItem.schema) {
-      const next = !_.isEmpty(fieldItem.list) ? generateFieldValidate(fieldItem.list) : null;
+      const next = !_.isEmpty(fieldItem.list)
+        ? generateFieldValidate(fieldItem.list, pathName)
+        : null;
 
       const fn = (data) => {
         const ret = check(fieldItem, data);
         if (ret) {
-          return ret;
+          return [pathName, ...ret];
         }
         const v = data[fieldItem.name];
         if (_.isEmpty(next) || v == null) {
           return null;
         }
         if (fieldItem.type === 'object') {
-          return checkDataValueValid(next, v);
+          const invalid = checkDataValueValid(next, v);
+          if (invalid) {
+            return invalid;
+          }
         }
         if (fieldItem.type === 'array') {
           for (let j = 0; j < v.length; j++) {
@@ -193,9 +199,9 @@ const generateFieldValidate = (fieldList) => {
         result.push((data) => {
           if (!validate(data)) {
             if (fieldItem.message) {
-              return [fieldItem.name, DATA_VALUE_INVALID, fieldItem.message];
+              return [pathName, DATA_VALUE_INVALID, fieldItem.message];
             }
-            return [fieldItem.name, DATA_VALUE_INVALID, JSON.stringify(validate.errors)];
+            return [pathName, DATA_VALUE_INVALID, JSON.stringify(validate.errors)];
           }
           return null;
         });
