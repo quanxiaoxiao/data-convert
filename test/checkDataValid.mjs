@@ -34,7 +34,7 @@ test('checkDataValid', (t) => {
       },
     },
   ]);
-  t.is(validate({ name: 'aaaaaaa' }), '123');
+  t.is(validate({ name: 'aaaaaaa' })[2], '123');
   t.true(validate({ name: 111 }) == null);
   validate = checkDataValid([
     {

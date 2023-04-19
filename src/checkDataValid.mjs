@@ -10,6 +10,10 @@ const DATA_TYPE_ARRAY = 'array';
 const DATA_TYPE_OBJECT = 'object';
 const DATA_TYPE_INTEGER = 'integer';
 
+const DATA_TYPE_INVALID = 1;
+const DATA_VALUE_EMPTY = 2;
+const DATA_VALUE_INVALID = 3;
+
 const validateField = (new Ajv({ strict: false })).compile({
   type: 'object',
   properties: {
@@ -60,7 +64,7 @@ const generateFieldValidate = (fieldList) => {
       type: 'number',
       match: (v) => {
         if (!Number.isInteger(v)) {
-          return `\`${fieldItem.name}\` dataValue \`${JSON.stringify(v)}\` invalid`;
+          return [fieldItem.name, DATA_TYPE_INVALID, null];
         }
         return null;
       },
@@ -70,10 +74,10 @@ const generateFieldValidate = (fieldList) => {
       match: (v) => {
         if (fieldItem.required) {
           if (v === '') {
-            return `\`${fieldItem.name}\` dataValue is empty`;
+            return [fieldItem.name, DATA_VALUE_EMPTY, null];
           }
           if (fieldItem.trim && v.trim() === '') {
-            return `\`${fieldItem.name}\` dataValue is empty`;
+            return [fieldItem.name, DATA_VALUE_EMPTY, null];
           }
         }
         return null;
@@ -89,10 +93,10 @@ const generateFieldValidate = (fieldList) => {
       type: 'object',
       match: (v) => {
         if (!Array.isArray(v)) {
-          return `\`${fieldItem.name}\` data invalid`;
+          return [fieldItem.name, DATA_TYPE_INVALID, null];
         }
         if (fieldItem.required && v.length === 0) {
-          return `\`${fieldItem.name}\` dataValue is empty`;
+          return [fieldItem.name, DATA_VALUE_EMPTY, null];
         }
         return null;
       },
@@ -101,7 +105,7 @@ const generateFieldValidate = (fieldList) => {
       type: 'object',
       match: (v) => {
         if (!_.isPlainObject(v)) {
-          return `\`${fieldItem.name}\` dataValue \`${JSON.stringify(v)}\` invalid`;
+          return [fieldItem.name, DATA_TYPE_INVALID, null];
         }
         return null;
       },
@@ -119,17 +123,17 @@ const generateFieldValidate = (fieldList) => {
         const v = data[fieldItem.name];
         if (v == null) {
           if (fieldItem.required) {
-            return `\`${fieldItem.name}\` dataValue is empty`;
+            return [fieldItem.name, DATA_VALUE_EMPTY, null];
           }
           return null;
         }
         const dataType = typeof v;
         if (Array.isArray(handler.type)) {
           if (!handler.type.include(dataType)) {
-            return `\`${fieldItem.name}\` dataType \`${JSON.stringify(v)}\` invalid`;
+            return [fieldItem.name, DATA_TYPE_INVALID, null];
           }
         } else if (handler.type !== dataType) {
-          return `\`${fieldItem.name}\` dataType \`${JSON.stringify(v)}\` invalid`;
+          return [fieldItem.name, DATA_TYPE_INVALID, null];
         }
         if (handler.match) {
           const ret = handler.match(v);
@@ -156,9 +160,9 @@ const generateFieldValidate = (fieldList) => {
         result.push((data) => {
           if (!validate(data)) {
             if (fieldItem.message) {
-              return fieldItem.message;
+              return [fieldItem.name, DATA_VALUE_INVALID, fieldItem.message];
             }
-            return JSON.stringify(validate.errors);
+            return [fieldItem.name, DATA_VALUE_INVALID, JSON.stringify(validate.errors)];
           }
           return null;
         });
