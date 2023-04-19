@@ -10,6 +10,7 @@ const DATA_TYPE_ARRAY = 'array';
 const DATA_TYPE_OBJECT = 'object';
 const DATA_TYPE_INTEGER = 'integer';
 
+const DATA_EMPTY = 0;
 const DATA_TYPE_INVALID = 1;
 const DATA_VALUE_EMPTY = 2;
 const DATA_VALUE_INVALID = 3;
@@ -54,25 +55,34 @@ const validateField = (new Ajv({ strict: false })).compile({
   required: ['name', 'type'],
 });
 
-const generateFieldValidate = (fieldList) => {
-  const result = [];
+const checkDataValueValid = (validateList, v) => {
+  for (let i = 0; i < validateList.length; i++) {
+    const validate = validateList[i];
+    const ret = validate(v);
+    if (ret) {
+      return ret;
+    }
+  }
+};
+
+const check = (fieldItem, data) => {
   const map = {
     [DATA_TYPE_NUMBER]: () => ({
       type: 'number',
     }),
-    [DATA_TYPE_INTEGER]: (fieldItem) => ({
+    [DATA_TYPE_INTEGER]: (d) => ({
       type: 'number',
       match: (v) => {
         if (!Number.isInteger(v)) {
-          return [fieldItem.name, DATA_TYPE_INVALID, null];
+          return [d.name, DATA_TYPE_INVALID, null];
         }
         return null;
       },
     }),
-    [DATA_TYPE_STRING]: (fieldItem) => ({
+    [DATA_TYPE_STRING]: (d) => ({
       type: 'string',
       match: (v) => {
-        if (fieldItem.required) {
+        if (d.required) {
           if (v === '') {
             return [fieldItem.name, DATA_VALUE_EMPTY, null];
           }
@@ -89,68 +99,88 @@ const generateFieldValidate = (fieldList) => {
     [DATA_TYPE_JSON]: () => ({
       type: ['object', 'string', 'number', 'boolean'],
     }),
-    [DATA_TYPE_ARRAY]: (fieldItem) => ({
+    [DATA_TYPE_ARRAY]: (d) => ({
       type: 'object',
       match: (v) => {
         if (!Array.isArray(v)) {
-          return [fieldItem.name, DATA_TYPE_INVALID, null];
+          return [d.name, DATA_TYPE_INVALID, null];
         }
-        if (fieldItem.required && v.length === 0) {
-          return [fieldItem.name, DATA_VALUE_EMPTY, null];
+        if (d.required && v.length === 0) {
+          return [d.name, DATA_VALUE_EMPTY, null];
         }
         return null;
       },
     }),
-    [DATA_TYPE_OBJECT]: (fieldItem) => ({
+    [DATA_TYPE_OBJECT]: (d) => ({
       type: 'object',
       match: (v) => {
         if (!_.isPlainObject(v)) {
-          return [fieldItem.name, DATA_TYPE_INVALID, null];
+          return [d.name, DATA_TYPE_INVALID, null];
         }
         return null;
       },
     }),
   };
+  const v = data[fieldItem.name];
+  if (v == null) {
+    if (fieldItem.required) {
+      return [fieldItem.name, DATA_VALUE_EMPTY, null];
+    }
+    if (fieldItem.type === 'array') {
+      return [fieldItem.name, DATA_VALUE_INVALID, null];
+    }
+    return null;
+  }
+  const dataType = typeof v;
+  const handler = map[fieldItem.type](fieldItem);
+  if (Array.isArray(handler.type)) {
+    if (!handler.type.include(dataType)) {
+      return [fieldItem.name, DATA_TYPE_INVALID, null];
+    }
+  } else if (handler.type !== dataType) {
+    return [fieldItem.name, DATA_TYPE_INVALID, null];
+  }
+  if (handler.match) {
+    const ret = handler.match(v);
+    if (ret) {
+      return ret;
+    }
+  }
+  return null;
+};
+
+const generateFieldValidate = (fieldList) => {
+  const result = [];
   for (let i = 0; i < fieldList.length; i++) {
     const fieldItem = fieldList[i];
     if (!validateField(fieldItem)) {
       throw new Error(`field \`${JSON.stringify(fieldItem)}\` invalid ${JSON.stringify(validateField.errors)}`);
     }
     if (!fieldItem.schema) {
-      const handler = map[fieldItem.type](fieldItem);
       const next = !_.isEmpty(fieldItem.list) ? generateFieldValidate(fieldItem.list) : null;
-      result.push((data) => {
+
+      const fn = (data) => {
+        const ret = check(fieldItem, data);
+        if (ret) {
+          return ret;
+        }
         const v = data[fieldItem.name];
-        if (v == null) {
-          if (fieldItem.required) {
-            return [fieldItem.name, DATA_VALUE_EMPTY, null];
-          }
+        if (_.isEmpty(next) || v == null) {
           return null;
         }
-        const dataType = typeof v;
-        if (Array.isArray(handler.type)) {
-          if (!handler.type.include(dataType)) {
-            return [fieldItem.name, DATA_TYPE_INVALID, null];
-          }
-        } else if (handler.type !== dataType) {
-          return [fieldItem.name, DATA_TYPE_INVALID, null];
+        if (fieldItem.type === 'object') {
+          return checkDataValueValid(next, v);
         }
-        if (handler.match) {
-          const ret = handler.match(v);
-          if (ret) {
-            return ret;
+        if (fieldItem.type === 'array') {
+          for (let j = 0; j < v.length; j++) {
+            const invalid = checkDataValueValid(next, v[j]);
+            if (invalid) {
+              return invalid;
+            }
           }
         }
-        if (next) {
-          if (fieldItem.type === 'array') {
-            return v.find((d) => next.some((validate) => validate(d)));
-          }
-          if (v != null) {
-            return next.some((validate) => validate(v));
-          }
-        }
-        return null;
-      });
+      };
+      result.push(fn);
     } else {
       try {
         const validate = new Ajv({
@@ -176,20 +206,14 @@ const generateFieldValidate = (fieldList) => {
 
 const checkDataValid = (list) => {
   if (_.isEmpty(list)) {
-    return () => {};
+    return () => null;
   }
   const validateList = generateFieldValidate(list);
   return (data) => {
     if (!_.isPlainObject(data)) {
-      return 'data invalid';
+      return [null, DATA_EMPTY, 'data invalid'];
     }
-    for (let i = 0; i < validateList.length; i++) {
-      const validate = validateList[i];
-      const ret = validate(data);
-      if (ret) {
-        return ret;
-      }
-    }
+    return checkDataValueValid(validateList, data);
   };
 };
 

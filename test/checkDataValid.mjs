@@ -3,8 +3,8 @@ import checkDataValid from '../src/checkDataValid.mjs';
 
 test('checkDataValid', (t) => {
   let validate = checkDataValid([]);
-  t.is(validate({}), undefined);
-  t.is(validate({ name: 'cqq' }), undefined);
+  t.true(validate({}) == null);
+  t.true(validate({ name: 'cqq' }) == null);
   t.throws(() => {
     checkDataValid([
       {
@@ -35,7 +35,29 @@ test('checkDataValid', (t) => {
     },
   ]);
   t.is(validate({ name: 'aaaaaaa' })[2], '123');
+  t.is(validate({ name: 'aaaaaaa' })[0], 'name');
   t.true(validate({ name: 111 }) == null);
+  validate = checkDataValid([
+    {
+      name: 'name',
+      type: 'string',
+    },
+    {
+      name: 'obj',
+      type: 'object',
+      required: true,
+      list: [
+        {
+          name: 'foo',
+          type: 'string',
+          required: true,
+        },
+      ],
+    },
+  ]);
+  t.true(validate({ name: 'aaa', obj: {} }) != null);
+  t.true(validate({ name: 'aaa', obj: { foo: 'aaa' } }) == null);
+  t.is(validate({ name: 'aaa', obj: { foo: 222 } })[0], 'foo');
   validate = checkDataValid([
     {
       name: 'name',
@@ -275,7 +297,7 @@ test('checkDataValid sub', (t) => {
   ];
   const validate = checkDataValid(fieldList);
 
-  t.true(!validate({
+  t.true(validate({
     name: 'aaa',
     list: [
       {
@@ -291,8 +313,8 @@ test('checkDataValid sub', (t) => {
         },
       ],
     },
-  }));
-  t.true(!!validate({
+  }) == null);
+  t.true(validate({
     name: 'aaa',
     list: [],
     obj: {
@@ -303,7 +325,7 @@ test('checkDataValid sub', (t) => {
         },
       ],
     },
-  }));
+  }) != null);
   t.true(!!validate({
     name: 'aaa',
     list: [
