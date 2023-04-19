@@ -101,6 +101,10 @@ const validateField = (new Ajv({ strict: false })).compile({
         'object',
       ],
     },
+    message: {
+      type: 'string',
+      nullable: true,
+    },
     required: {
       type: 'boolean',
       nullable: true,
@@ -134,7 +138,7 @@ const getValidateList = (arr, path = []) => {
             .compile(item.schema),
         });
       } catch (error) {
-        console.warn(`\`${item.name}\` parse schema fail ${error.message}`);
+        console.warn(`\`${JSON.stringify(item.schema)}\` [${item.name}] parse schema fail, ${error.message}`);
       }
     }
     if (!_.isEmpty(item.list)) {
@@ -149,12 +153,13 @@ const generateValidate = (list) => {
   for (let i = 0; i < list.length; i++) {
     const fieldItem = list[i];
     if (!validateField(fieldItem)) {
-      throw new Error(`field invalid ${JSON.stringify(validateField.errors)}`);
+      throw new Error(`field \`${JSON.stringify(fieldItem)}\` invalid ${JSON.stringify(validateField.errors)}`);
     }
     if (!fieldItem.schema) {
       fieldList.push({
         type: fieldItem.type,
         name: fieldItem.name,
+        message: fieldItem.message || null,
         required: !!fieldItem.required,
         list: fieldItem.list,
       });
@@ -174,6 +179,9 @@ const checkDataValid = (list) => {
   const validate = generateValidate(list);
   const validateList = getValidateList(list, []);
   return (data) => {
+    if (!_.isPlainObject(data)) {
+      return 'data invalid';
+    }
     if (!validate(data)) {
       return JSON.stringify(validate.errors);
     }
