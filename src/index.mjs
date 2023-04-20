@@ -9,6 +9,7 @@ import projection from './projection.mjs';
 import checkoutDataValue from './checkoutDataValue.mjs';
 import merge from './merge.mjs';
 import select from './select.mjs';
+import getFieldListByPathname from './getFieldListByPathname.mjs';
 
 export {
   convertDataValue,
@@ -16,6 +17,7 @@ export {
   select,
   projection,
   merge,
+  getFieldListByPathname,
   checkoutDataValue,
   DATA_EMPTY,
   DATA_TYPE_INVALID,
