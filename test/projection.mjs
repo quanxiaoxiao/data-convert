@@ -25,6 +25,97 @@ test('projection', (t) => {
   t.deepEqual(projection([])([{ name: 'cqq' }]), [{ name: 'cqq' }]);
 });
 
+test('$cond', (t) => {
+  t.is(
+    projection([
+      {
+        $cond: {
+          if: {
+            'data.name': 'cqq',
+          },
+          then: 2,
+          else: null,
+        },
+      },
+    ])({ data: { name: 'cqq' } }),
+    2,
+  );
+  t.is(
+    projection([
+      {
+        $cond: {
+          if: {
+            name: 'cqq',
+          },
+          then: 2,
+          else: null,
+        },
+      },
+    ])({ data: { name: 'cqq' } }),
+    null,
+  );
+  t.is(
+    projection([
+      {
+        $cond: {
+          if: {
+            beginDate: {
+              $nin: [null, ''],
+            },
+            beginTime: {
+              $nin: [null, ''],
+            },
+            endDate: '$beginDate',
+          },
+          then: 2,
+          else: null,
+        },
+      },
+    ])({ beginDate: 22, beginTime: 33, endDate: 22 }),
+    2,
+  );
+  t.is(
+    projection([
+      {
+        $cond: {
+          if: {
+            beginDate: {
+              $nin: [null, ''],
+            },
+            beginTime: {
+              $nin: [null, ''],
+            },
+            endDate: '$beginDate',
+          },
+          then: 2,
+          else: null,
+        },
+      },
+    ])({ beginDate: 22, beginTime: 33, endDate: 23 }),
+    null,
+  );
+  t.is(
+    projection([
+      {
+        $cond: {
+          if: {
+            beginDate: {
+              $nin: [null, ''],
+            },
+            beginTime: {
+              $nin: [null, ''],
+            },
+            endDate: '$beginDate',
+          },
+          then: 2,
+          else: null,
+        },
+      },
+    ])({ beginDate: 22, beginTime: null, endDate: 22 }),
+    null,
+  );
+});
+
 test('$get', (t) => {
   t.throws(() => {
     projection([

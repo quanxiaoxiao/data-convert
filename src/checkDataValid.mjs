@@ -137,7 +137,7 @@ const check = (fieldItem, data) => {
   const dataType = typeof v;
   const handler = map[fieldItem.type](fieldItem);
   if (Array.isArray(handler.type)) {
-    if (!handler.type.include(dataType)) {
+    if (!handler.type.includes(dataType)) {
       return [DATA_TYPE_INVALID, null];
     }
   } else if (handler.type !== dataType) {

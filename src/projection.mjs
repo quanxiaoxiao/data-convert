@@ -12,6 +12,7 @@ const keywords = [
   '$join',
   '$project',
   '$limit',
+  '$cond',
   // '$uniq',
   // '$reduce',
   // '$count',
@@ -97,6 +98,34 @@ const handler = {
       nullable: false,
     },
     fn: (express) => (d) => _.get(d, express, null),
+  },
+  $cond: {
+    schema: {
+      type: 'object',
+      properties: {
+        if: {
+          type: ['object', 'array'],
+        },
+        then: {
+          type: ['object', 'array', 'string', 'number', 'boolean'],
+          nullable: true,
+        },
+        else: {
+          type: ['object', 'array', 'string', 'number', 'boolean'],
+          nullable: true,
+        },
+      },
+      required: ['if', 'then', 'else'],
+    },
+    fn: (express) => {
+      const match = compare(express.if);
+      return (v) => {
+        if (match(v)) {
+          return express.then;
+        }
+        return express.else;
+      };
+    },
   },
   $filter: {
     schema: {
