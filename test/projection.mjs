@@ -23,6 +23,16 @@ test('projection', (t) => {
   });
   t.deepEqual(projection([])('bbb'), 'bbb');
   t.deepEqual(projection([])([{ name: 'cqq' }]), [{ name: 'cqq' }]);
+  t.deepEqual(projection([
+    {
+      $project: {
+        list: [],
+      },
+    },
+    {
+      $get: 'list',
+    },
+  ])(), null);
 });
 
 test('$cond', (t) => {
@@ -1212,6 +1222,19 @@ test('projection pipeline', (t) => {
         $project: ['value', { type: 'string' }],
       },
     ])(),
+    null,
+  );
+  t.is(
+    projection([
+      {
+        $project: {
+          value: 'cqq',
+        },
+      },
+      {
+        $project: ['value', { type: 'string' }],
+      },
+    ])({}),
     'cqq',
   );
   t.is(

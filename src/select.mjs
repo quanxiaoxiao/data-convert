@@ -105,8 +105,11 @@ export const selectData = ([dataKey, schema]) => {
   }
   checkDataTypeSupport(schema.type);
   return (data) => {
-    const dataValue = dataKey === '$' ? data : getDataValue(data, dataKey);
-    return convertDataValue(schema.resolve ? schema.resolve(dataValue) : dataValue, schema.type);
+    let dataValue = dataKey === '$' ? data : getDataValue(data, dataKey);
+    if (schema.resolve) {
+      dataValue = schema.resolve(dataValue);
+    }
+    return convertDataValue(dataValue, schema.type);
   };
 };
 
@@ -144,12 +147,15 @@ const parse = (exp) => {
 
 function select(schema) {
   if (Array.isArray(schema)) {
+    if (_.isEmpty(schema)) {
+      return (d) => d;
+    }
     if (Array.isArray(schema[1])) {
       const convert = select(schema[1]);
       const dataKey = schema[0];
       return (d) => {
-        const v = getDataValue(d, dataKey);
-        return convert(v);
+        const dataValue = getDataValue(d, dataKey);
+        return convert(dataValue);
       };
     }
     return selectData(schema);
@@ -215,10 +221,19 @@ function select(schema) {
     const dataKey = schema.properties[0];
     return (data) => {
       const dataValue = getDataValue(data, dataKey);
+      if (dataValue == null) {
+        return null;
+      }
       return convert(dataValue);
     };
   }
-  return parse(schema.properties);
+  const convert = parse(schema.properties);
+  return (d) => {
+    if (d == null) {
+      return null;
+    }
+    return convert(d);
+  };
 }
 
 export default select;

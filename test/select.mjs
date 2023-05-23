@@ -23,9 +23,7 @@ test('select invalid', (t) => {
   t.throws(() => {
     select('');
   });
-  t.throws(() => {
-    select([]);
-  });
+  t.is(select([])('aa'), 'aa');
   t.throws(() => {
     select(1);
   });
@@ -140,6 +138,18 @@ test('data', (t) => {
     select([
       'obj',
       ['age', { type: 'number' }],
+    ])({
+      name: '33.3',
+      obj: {
+        age: '66.6',
+      },
+    }),
+    66.6,
+  );
+  t.is(
+    select([
+      'obj.age',
+      ['$', { type: 'number' }],
     ])({
       name: '33.3',
       obj: {
@@ -598,5 +608,52 @@ test('with resolve', (t) => {
       },
     ]),
     ['cqq_quan', 'cqq_cqq'],
+  );
+});
+
+test('select sub', (t) => {
+  let projection = select({
+    type: 'object',
+    properties: {
+      name: '$name',
+      sub: ['obj', {
+        type: 'object',
+        properties: {
+          name: '$name:string',
+          age: '$age:integer',
+        },
+      }],
+    },
+  });
+  t.deepEqual(
+    projection({
+      name: 'cqq',
+    }),
+    {
+      name: 'cqq',
+      sub: null,
+    },
+  );
+  projection = select({
+    type: 'object',
+    properties: {
+      name: '$name',
+      sub: ['obj', {
+        type: 'array',
+        properties: {
+          name: '$name:string',
+          age: '$age:integer',
+        },
+      }],
+    },
+  });
+  t.deepEqual(
+    projection({
+      name: 'cqq',
+    }),
+    {
+      name: 'cqq',
+      sub: [],
+    },
   );
 });
