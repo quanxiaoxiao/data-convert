@@ -1,6 +1,7 @@
 /* eslint consistent-return: 0 */
 import Ajv from 'ajv/dist/2019.js'; // eslint-disable-line
 import _ from 'lodash';
+import compare from '@quanxiaoxiao/compare';
 
 const DATA_TYPE_NUMBER = 'number';
 const DATA_TYPE_STRING = 'string';
@@ -159,6 +160,14 @@ const generateFieldValidate = (fieldList, parentName) => {
     if (!validateField(fieldItem)) {
       throw new Error(`field \`${JSON.stringify(fieldItem)}\` invalid ${JSON.stringify(validateField.errors)}`);
     }
+    let compareFn = null;
+    try {
+      if (!_.isEmpty(fieldItem.match)) {
+        compareFn = compare(fieldItem.match);
+      }
+    } catch (error) {
+      throw new Error(`\`${JSON.stringify(fieldItem)}\` parse match fail, \`${JSON.stringify(fieldItem.match)}\``);
+    }
     const pathName = parentName ? `${parentName}.${fieldItem.name}` : fieldItem.name;
     if (!fieldItem.schema) {
       const next = !_.isEmpty(fieldItem.list)
@@ -166,6 +175,9 @@ const generateFieldValidate = (fieldList, parentName) => {
         : null;
 
       const fn = (data) => {
+        if (compareFn && !compareFn(data)) {
+          return;
+        }
         const ret = check(fieldItem, data);
         if (ret) {
           return [pathName, ...ret];
@@ -197,6 +209,9 @@ const generateFieldValidate = (fieldList, parentName) => {
         }).compile(fieldItem.schema);
 
         result.push((data) => {
+          if (compareFn && !compareFn(data)) {
+            return;
+          }
           if (!validate(data)) {
             if (fieldItem.message) {
               return [pathName, DATA_VALUE_INVALID, fieldItem.message];
@@ -206,7 +221,7 @@ const generateFieldValidate = (fieldList, parentName) => {
           return null;
         });
       } catch (error) {
-        throw new Error(`\`${fieldItem}\` parse schema fail, \`${JSON.stringify(fieldItem.schema)}\``);
+        throw new Error(`\`${JSON.stringify(fieldItem)}\` parse schema fail, \`${JSON.stringify(fieldItem.schema)}\``);
       }
     }
   }

@@ -429,6 +429,96 @@ test('checkDataValid array', (t) => {
   })[0], 'list.1.name');
 });
 
+test('checkDataValid match', (t) => {
+  let validate = checkDataValid([
+    {
+      name: 'name',
+      type: 'string',
+      required: true,
+    },
+    {
+      name: 'age',
+      type: 'integer',
+      required: true,
+      match: {
+        name: 'quan',
+      },
+    },
+  ]);
+  t.true(!validate({
+    name: 'aaa',
+    age: 33,
+  }));
+  t.true(!validate({
+    name: 'aaa',
+    age: '33',
+  }));
+  t.true(!validate({
+    name: 'aaa',
+    age: null,
+  }));
+  t.true(!!validate({
+    name: 'quan',
+    age: null,
+  }));
+  t.true(!!validate({
+    name: 'quan',
+    age: 'xxx',
+  }));
+  t.true(!validate({
+    name: 'cqq',
+    age: 'xxx',
+  }));
+  validate = checkDataValid([
+    {
+      name: 'name',
+      type: 'string',
+      required: true,
+    },
+    {
+      name: 'obj',
+      type: 'object',
+      required: true,
+      list: [
+        {
+          name: 'aa',
+          type: 'string',
+          required: true,
+        },
+        {
+          name: 'bb',
+          type: 'string',
+          match: {
+            aa: 'big',
+          },
+          required: true,
+        },
+      ],
+    },
+  ]);
+  t.true(!validate({
+    name: 'cqq',
+    obj: {
+      aa: 'xxx',
+      bb: 'ccc',
+    },
+  }));
+  t.true(!validate({
+    name: 'cqq',
+    obj: {
+      aa: 'xxx',
+      bb: null,
+    },
+  }));
+  t.true(!!validate({
+    name: 'cqq',
+    obj: {
+      aa: 'big',
+      bb: null,
+    },
+  }));
+});
+
 test('checkDataValid schema', (t) => {
   let validate = checkDataValid([
     {
