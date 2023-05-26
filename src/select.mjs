@@ -176,11 +176,12 @@ function select(schema) {
       const dataKey = schema.properties[0];
       if (/^\$\$/.test(dataKey)) {
         const convert = select(schema.properties[1]);
+        const _dataKey = dataKey.slice(2);
         return (data) => {
           if (!Array.isArray(data)) {
             return [];
           }
-          return data.map((d) => convert(getDataValue(d, dataKey.slice(2))));
+          return data.map((d) => convert(getDataValue(d, _dataKey)));
         };
       }
       if (Array.isArray(schema.properties[1])) {
