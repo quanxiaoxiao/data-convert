@@ -1264,3 +1264,42 @@ test('projection pipeline', (t) => {
     null,
   );
 });
+
+test('projection filter empty array', (t) => {
+  t.deepEqual(projection([
+    {
+      $get: 'list',
+    },
+    {
+      $filter: {
+        'arr.length': {
+          $gte: 1,
+        },
+      },
+    },
+    {
+      $map: {
+        _id: '$id:string',
+        name: '$name:string',
+      },
+    },
+  ])({
+    list: [
+      {
+        arr: [],
+        name: '3',
+        id: '3',
+      },
+      {
+        arr: [2],
+        name: '1',
+        id: '1',
+      },
+    ],
+  }), [
+    {
+      _id: '1',
+      name: '1',
+    },
+  ]);
+});
